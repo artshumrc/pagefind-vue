@@ -1,0 +1,134 @@
+<template>
+  <section class="border-bottom fade-section results-section" :class="{ 'visible': true }" role="tabpanel">
+    <h2 class="visually-hidden">Results</h2>
+    <ul id="results-list">
+      <li v-for="result in componentPageResults" :key="result?.raw_url">
+        <template v-if="result">
+          <slot name="result" :result="result">
+            <div class="result">
+              <a :href="result.raw_url">
+                <h3>{{ result.meta.title }}</h3>
+              </a>
+              <div class="flex-row">
+                <img v-if="result.meta.image" :src="result.meta.image" alt="" width="150" />
+                <p class="result-excerpt" v-html="result.excerpt"></p>
+              </div>
+            </div>
+          </slot>
+        </template>
+      </li>
+    </ul>
+    <Pagination :current-page="componentCurrentPage" :total-items="props.results.length"
+      :items-per-page="props.itemsPerPage" @page-change="handlePageChange" />
+  </section>
+</template>
+
+<script setup lang="ts">
+import { ref, watch, onMounted } from 'vue';
+import Pagination from './Pagination.vue';
+import type { ResultData } from './types';
+
+const props = defineProps<{
+  pageResults: (ResultData | null)[];
+  results: any[];
+  itemsPerPage: number;
+  currentPage: number;
+}>();
+
+const emit = defineEmits(['update-url-params', 'perform-search']);
+
+const componentCurrentPage = ref(props.currentPage);
+const componentPageResults = ref<(ResultData | null)[]>(props.pageResults);
+
+onMounted(async () => {
+  await updateCurrentPageResults();
+});
+
+// Add watcher for results length changes
+watch(() => props.results.length, () => {
+  // Reset to page 1 when results change
+  componentCurrentPage.value = 1;
+  emit('update-url-params', 1);
+  updateCurrentPageResults();
+});
+
+watch(componentCurrentPage, async (newPage) => {
+  await updateCurrentPageResults();
+});
+
+// these watchers are needed to update the state of this component
+// when `currentPage` in `Search.vue` is reset by `clearSearch`.
+watch(() => props.pageResults, (newPageResults) => {
+  componentPageResults.value = newPageResults;
+});
+
+watch(() => props.currentPage, (newPage) => {
+  componentCurrentPage.value = newPage;
+  updateCurrentPageResults();
+}, { immediate: true, flush: 'sync' });
+
+const handlePageChange = (page: number) => {
+  componentCurrentPage.value = page;
+  emit('update-url-params', page);
+  updateCurrentPageResults();
+};
+
+async function updateCurrentPageResults() {
+  const start = (componentCurrentPage.value - 1) * props.itemsPerPage;
+  const end = start + props.itemsPerPage;
+    
+  // have to await each result to get data, so only await the page results
+  const newPageResults = props.results.slice(start, end);
+  const processed = await Promise.all(
+    newPageResults.map(result => result.data())
+  );
+  
+  componentPageResults.value = processed;
+}
+
+
+</script>
+
+<style scoped>
+.visually-hidden {
+  clip: rect(0 0 0 0);
+  clip-path: inset(50%);
+  height: 1px;
+  overflow: hidden;
+  position: absolute;
+  white-space: nowrap;
+  width: 1px;
+}
+
+.results-section {
+  padding: 1rem;
+}
+
+.result {
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+  margin-bottom: 1rem;
+  justify-content: center;
+}
+
+.flex-row {
+  display: flex;
+  flex-direction: row;
+  gap: 1rem;
+}
+
+#results-list > li {
+  list-style-type: none;
+}
+
+button {
+  padding: 0.5rem 1rem;
+  cursor: pointer;
+  font-style: normal;
+}
+
+:deep(.result-excerpt mark) {
+  color: black;
+}
+</style>
