@@ -311,7 +311,7 @@ onMounted(() => {
 :root {
   --pagefind-vue-fd-input-border: 1px solid #ccc;
   --pagefind-vue-fd-input-border-radius: 0.25rem;
-  --pagefind-vue-fd-font-size: 1rem;
+  --pagefind-vue-fd-input-font-size: 1rem;
   --pagefind-vue-fd-input-color: black;
   --pagefind-vue-fd-input-bg: white;
   --pagefind-vue-fd-input-padding: 0.5rem;

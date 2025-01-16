@@ -1,22 +1,29 @@
 # pagefind-vue
 
-## `FilterableDropdown.vue` CSS variables
+## Available CSS Variables
+
+### `FilterableDropdown.vue`
 
 These are the CSS variables available to be overidden and their default values:
 
 ```css
 :root {
+  /* visible text input */
   --pagefind-vue-fd-input-border: 1px solid #ccc;
   --pagefind-vue-fd-input-border-radius: 0.25rem;
-  --pagefind-vue-fd-font-size: 1rem;
+  --pagefind-vue-fd-input-font-size: 1rem;
   --pagefind-vue-fd-input-color: black;
   --pagefind-vue-fd-input-bg: white;
   --pagefind-vue-fd-input-padding: 0.5rem;
+
+  /* dropdown container */
   --pagefind-vue-fd-options-max-height: 200px;
   --pagefind-vue-fd-options-z-index: 1000;
   --pagefind-vue-fd-options-bg: white;
   --pagefind-vue-fd-options-border: 1px solid #ccc;
   --pagefind-vue-fd-options-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+
+  /* individual option */
   --pagefind-vue-fd-option-text-align: left;
   --pagefind-vue-fd-option-padding: 0.4rem;
   --pagefind-vue-fd-option-color: black;
@@ -24,7 +31,24 @@ These are the CSS variables available to be overidden and their default values:
   --pagefind-vue-fd-option-hover-bg: #b6b6b6;
   --pagefind-vue-fd-option-selected-bg: #c1ffbe;
   --pagefind-vue-fd-option-disabled-bg: #f5f5f5;
+
+  /* text displayed when no results match input */
   --pagefind-vue-fd-no-results-font-style: italic;
+}
+```
+
+### `CheckboxSingle.vue`
+
+```CSS
+:root {
+  --pagefind-vue-checkbox-option-margin: 0.5rem 0;
+
+  --pagefind-vue-checkbox-label-padding: 0.1rem 1.5rem;
+  --pagefind-vue-checkbox-label-font-size: 1rem;
+  --pagefind-vue-checkbox-text-color: black;
+
+  --pagefind-vue-checkbox-input-size: 1rem;
+  --pagefind-vue-checkbox-accent: rgb(55, 0, 255);
 }
 ```
 

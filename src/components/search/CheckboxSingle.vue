@@ -42,7 +42,9 @@ const handleChange = () => {
   --pagefind-vue-checkbox-option-margin: 0.5rem 0;
   --pagefind-vue-checkbox-label-padding: 0.1rem 1.5rem;
   --pagefind-vue-checkbox-label-font-size: 1rem;
+  --pagefind-vue-checkbox-text-color: black;
   --pagefind-vue-checkbox-input-size: 1rem;
+  --pagefind-vue-checkbox-accent: rgb(55, 0, 255);
 }
 </style>
 
@@ -70,6 +72,7 @@ const handleChange = () => {
 .label-text {
   display: block;
   text-align: left;
+  color: var(--pagefind-vue-checkbox-text-color);
   font-size: var(--pagefind-vue-checkbox-label-font-size);
   padding: var(--pagefind-vue-checkbox-label-padding);
 }
@@ -80,6 +83,7 @@ const handleChange = () => {
   cursor: pointer;
   width: 1.2rem;
   height: var(--pagefind-vue-checkbox-input-size);
+  accent-color: var(--pagefind-vue-checkbox-accent);
 }
 
 .checkbox-option label.disabled {
