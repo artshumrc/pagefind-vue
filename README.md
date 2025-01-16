@@ -1,5 +1,12 @@
 # pagefind-vue
 
+## Quickstart
+
+```console
+npm install
+npm run dev
+```
+
 ## Available CSS Variables
 
 ### `FilterableDropdown.vue`
