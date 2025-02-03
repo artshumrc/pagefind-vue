@@ -2,8 +2,8 @@
   <aside class="filters-sidebar fade-section" :class="{ 'visible': mounted }">
     <h2 style="margin-bottom: 1rem;">Filters</h2>
 
-    <div v-for="(filterGroup, groupName) in filteredFilters" 
-         :key="groupName" 
+    <div v-for="(filterGroup, groupName) in filteredFilters"
+         :key="groupName"
          class="filter-group">
       <template v-if="filterGroup && Object.values(filterGroup).some(value => value > 0)">
         <h3>{{ groupName }}</h3>
@@ -25,7 +25,7 @@ import { ref, onMounted } from 'vue';
 import FilterComponent from './FilterComponent.vue';
 import type { FiltersDefinition } from './types';
 
-const props = defineProps<{
+defineProps<{
   filteredFilters: Record<string, { [key: string]: number }>;
   filteredKeywordFilters: { [key: string]: { [key: string]: number } };
   selectedFilters: { [key: string]: string[] };

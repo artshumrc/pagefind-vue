@@ -12,7 +12,7 @@
 
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
-import Search from './components/Search.vue'
+import Search from './components/PagefindSearch.vue'
 
 let pagefindPath: string
 if (import.meta.env.PROD) {

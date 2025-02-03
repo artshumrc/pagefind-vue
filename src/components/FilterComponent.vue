@@ -32,7 +32,7 @@
 import FilterableDropdown from './FilterableDropdown.vue'
 import CheckboxGroup from './CheckboxGroup.vue'
 
-const props = defineProps<{
+defineProps<{
   name: string
   options: { [key: string]: number }
   selectedFilters: { [key: string]: string[] }

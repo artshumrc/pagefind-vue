@@ -125,14 +125,15 @@ const handleFocus = () => {
   isTabbing.value = false
 }
 
-const handleClick = (event: Event) => {
-  const input = event.target as HTMLInputElement
+const handleClick = () => {
+  const input = visibleInput.value
+  if (!input) return
   input.select()
   searchText.value = ''
   showOptions.value = true
 }
 
-const handleBlur = (event: FocusEvent) => {
+const handleBlur = () => {
   // Wait to check if focus moved within component
   // nextTick did not work, a timeout did
   setTimeout(() => {

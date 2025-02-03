@@ -28,9 +28,13 @@ import { ref, watch, onMounted } from 'vue';
 import Pagination from './Pagination.vue';
 import type { ResultData } from './types';
 
+interface SearchResult {
+  data: () => Promise<ResultData | null>;
+}
+
 const props = defineProps<{
   pageResults: (ResultData | null)[];
-  results: any[];
+  results: SearchResult[];
   itemsPerPage: number;
   currentPage: number;
 }>();
@@ -52,7 +56,7 @@ watch(() => props.results.length, () => {
   updateCurrentPageResults();
 });
 
-watch(componentCurrentPage, async (newPage) => {
+watch(componentCurrentPage, async () => {
   await updateCurrentPageResults();
 });
 
@@ -76,13 +80,13 @@ const handlePageChange = (page: number) => {
 async function updateCurrentPageResults() {
   const start = (componentCurrentPage.value - 1) * props.itemsPerPage;
   const end = start + props.itemsPerPage;
-    
+
   // have to await each result to get data, so only await the page results
   const newPageResults = props.results.slice(start, end);
   const processed = await Promise.all(
     newPageResults.map(result => result.data())
   );
-  
+
   componentPageResults.value = processed;
 }
 
