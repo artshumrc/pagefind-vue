@@ -341,7 +341,7 @@ onMounted(() => {
 .filterable-dropdown-input {
   width: 100%;
   padding: var(--pagefind-vue-fd-input-padding);
-  padding-right: 3rem;
+  padding-right: 4rem;
   box-sizing: border-box;
   border: var(--pagefind-vue-fd-input-border);
   border-radius: var(--pagefind-vue-fd-input-border-radius);
