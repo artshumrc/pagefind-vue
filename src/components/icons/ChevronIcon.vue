@@ -4,7 +4,7 @@
     xmlns="http://www.w3.org/2000/svg"
     :width="props.size || '16'"
     :height="props.size || '16'"
-    :fill="props.color || '#000'"
+    :fill="props.color || 'currentColor'"
     :style="{ transform: `rotate(${rotations[direction]}deg)` }"
     viewBox="0 0 256 256"
   >
