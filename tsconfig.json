@@ -13,6 +13,7 @@
     "noUnusedLocals": true,
     "noUnusedParameters": true,
     "noFallthroughCasesInSwitch": true,
+    "noImplicitAny": false,
     "declaration": true,
     "declarationDir": "./dist/types",
     "emitDeclarationOnly": true,
