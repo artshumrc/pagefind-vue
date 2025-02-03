@@ -11,10 +11,11 @@
   ],
   "exports": {
     ".": {
-      "types": "./dist/types/components/Search.vue.d.ts",
-      "import": "./dist/components/Search.vue.js",
-      "require": "./dist/components/Search.vue.cjs"
-    }
+      "types": "./dist/types/index.d.ts",
+      "import": "./dist/pagefind-vue.es.js",
+      "require": "./dist/pagefind-vue.umd.js"
+    },
+    "./src/components/*": "./src/components/*"
   },
   "scripts": {
     "dev": "vite",
