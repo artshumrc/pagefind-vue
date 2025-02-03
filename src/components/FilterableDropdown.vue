@@ -46,6 +46,7 @@
       <li v-else v-for="option in filteredOptions" :key="option.value">
         <button
           :class="'filterable-dropdown-option'"
+          @mousedown.prevent
           @click="handleOptionSelect(option)"
           @keyup.down="navigateOptions('next', $event)"
           @keyup.up="navigateOptions('prev', $event)"
