@@ -384,17 +384,25 @@ function getSearchFilters() {
   return searchFilters
 }
 
-/**
- * Calculates and updates the counts for each tab based on the current search results,
- * excluding the tabbed filter itself to get accurate counts.
- */
+function sortTabs(tabs: { label: string; value: string; count: number }[], defaultTab?: string) {
+  if (!defaultTab) return tabs.sort((a, b) => b.count - a.count)
+
+  return [
+    ...tabs.filter((tab) => tab.value === defaultTab),
+    ...tabs.filter((tab) => tab.value !== defaultTab).sort((a, b) => b.count - a.count),
+  ]
+}
+
 function calculateTabCounts(filtersMinusTab: Filter = {}) {
   if (!props.tabbedFilter) return
-  tabs.value = Object.entries(filtersMinusTab[props.tabbedFilter] || {}).map(([value, count]) => ({
-    label: value,
-    value,
-    count,
-  }))
+  tabs.value = sortTabs(
+    Object.entries(filtersMinusTab[props.tabbedFilter] || {}).map(([value, count]) => ({
+      label: value,
+      value,
+      count,
+    })),
+    props.defaultTab,
+  )
 }
 </script>
 
