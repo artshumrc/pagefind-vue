@@ -6,6 +6,7 @@
         :id="`${name}_visible_input`"
         type="text"
         :class="['filterable-dropdown-input', { valid: isValid }]"
+        :title="displayValue"
         :value="displayValue"
         @input="handleInput"
         @focus="handleFocus"
