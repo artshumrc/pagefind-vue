@@ -330,7 +330,6 @@ onMounted(() => {
   --pagefind-vue-fd-option-selected-bg: #c1ffbe;
   --pagefind-vue-fd-option-disabled-bg: #f5f5f5;
   --pagefind-vue-fd-no-results-font-style: italic;
-  --pagefind-vue-fd-icon-bg: white;
 }
 </style>
 
@@ -342,6 +341,7 @@ onMounted(() => {
 .filterable-dropdown-input {
   width: 100%;
   padding: var(--pagefind-vue-fd-input-padding);
+  padding-right: 3rem;
   box-sizing: border-box;
   border: var(--pagefind-vue-fd-input-border);
   border-radius: var(--pagefind-vue-fd-input-border-radius);
@@ -421,8 +421,6 @@ onMounted(() => {
   bottom: 0;
   margin: auto;
   pointer-events: none;
-  background-color: var(--pagefind-vue-fd-icon-bg);
-  padding: 0.25rem;
 }
 
 .clear-button {
@@ -437,9 +435,9 @@ onMounted(() => {
   border: none;
   cursor: pointer;
   font-size: 1.2em;
+  padding: 0;
   margin: 0;
   line-height: 1;
   pointer-events: auto;
-  background-color: var(--pagefind-vue-fd-icon-bg);
 }
 </style>
