@@ -6,11 +6,12 @@
   "module": "./dist/pagefind-vue.es.js",
   "types": "./dist/types/index.d.ts",
   "files": [
-    "dist"
+    "dist",
+    "src/types"
   ],
   "exports": {
     ".": {
-      "types": "./dist/types/index.d.ts",
+      "types": "./src/types/index.d.ts",
       "import": "./dist/pagefind-vue.es.js",
       "require": "./dist/pagefind-vue.umd.js"
     }
