@@ -6,6 +6,7 @@
         :id="`${name}_visible_input`"
         type="text"
         :class="['filterable-dropdown-input', { valid: isValid }]"
+        :title="displayValue"
         :value="displayValue"
         @input="handleInput"
         @focus="handleFocus"
@@ -26,7 +27,7 @@
       >
         <XIcon size="16" color="#000" />
       </button>
-      <ChevronIcon direction="down" class="dropdown-icon" />
+      <ChevronIcon direction="down" class="dropdown-icon" color="#000" />
     </div>
 
     <input :id="`${name}_hidden_input`" type="hidden" :name="name" :value="modelValue" />
@@ -66,7 +67,7 @@
 
 <script lang="ts" setup>
 import { ref, computed, watch, onMounted } from 'vue'
-import ChevronIcon from '@/components/icons/ChevronIcon.vue'
+import ChevronIcon from './icons/ChevronIcon.vue'
 import XIcon from './icons/XIcon.vue'
 import type { Option } from './types'
 
@@ -125,14 +126,15 @@ const handleFocus = () => {
   isTabbing.value = false
 }
 
-const handleClick = (event: Event) => {
-  const input = event.target as HTMLInputElement
+const handleClick = () => {
+  const input = visibleInput.value
+  if (!input) return
   input.select()
   searchText.value = ''
   showOptions.value = true
 }
 
-const handleBlur = (event: FocusEvent) => {
+const handleBlur = () => {
   // Wait to check if focus moved within component
   // nextTick did not work, a timeout did
   setTimeout(() => {
@@ -340,6 +342,7 @@ onMounted(() => {
 .filterable-dropdown-input {
   width: 100%;
   padding: var(--pagefind-vue-fd-input-padding);
+  padding-right: 4rem;
   box-sizing: border-box;
   border: var(--pagefind-vue-fd-input-border);
   border-radius: var(--pagefind-vue-fd-input-border-radius);

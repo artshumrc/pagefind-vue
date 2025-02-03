@@ -50,8 +50,8 @@
 <script setup lang="ts">
 import { ref, onMounted, computed, watch, nextTick } from 'vue'
 import Tabs from './Tabs.vue'
-import Filters from './Filters.vue'
-import Results from './Results.vue'
+import Filters from './SearchFilters.vue'
+import Results from './SearchResults.vue'
 import type { FiltersDefinition, Filter, ResultData } from './types'
 
 const props = defineProps<{
@@ -119,7 +119,7 @@ onMounted(async () => {
     searchQuery.value = search
   }
 
-  await performSearch(search, true)
+  await performSearch(search)
   mounted.value = true
 })
 
@@ -310,63 +310,78 @@ const handleFilterUpdate = (group: string, value: string) => {
   performSearch(searchQuery.value)
 }
 
-async function performSearch(query: string | null, isInitialLoad = false) {
+async function performSearch(query: string | null) {
   if (!props.pagefind) return
 
   try {
-    const searchFilters: { [key: string]: string[] } = {}
+    const searchFilters = getSearchFilters()
 
-    // If we're using tabs and one is selected, add it as a filter.
-    // This is handled separately from other filters due to its special UI treatment.
-    if (props.tabbedFilter && activeTab.value) {
-      searchFilters[props.tabbedFilter] = [activeTab.value]
-    }
-
-    // Add all other selected filters to the search parameters
-    // Only include filters that have at least one value selected
-    Object.entries(selectedFilters.value).forEach(([group, values]) => {
-      if (values.length > 0) {
-        searchFilters[group] = values
-      }
-    })
-
-    // Sync the URL with current search state before performing the search
+    // Sync URL before performing search
     updateUrlParams(currentPage.value)
 
-    // Perform two searches:
-    // 1. Main search with all filters including the tab filter
-    const searchResults = await props.pagefind.search(query || null, {
-      sort: { classification: 'asc' },
-      filters: searchFilters,
-    })
+    // Perform main search with all filters
+    const searchResults = await props.pagefind
+      .search(query || null, {
+        sort: { classification: 'asc' },
+        filters: searchFilters,
+      })
+      .catch((error: Error) => {
+        console.error('Main search failed:', error)
+        return { results: [], filters: {}, total: 0 }
+      })
 
-    // 2. Secondary search excluding the tab filter
-    // This is needed to calculate accurate counts for each tab
-    // without being affected by the currently selected tab
-    const searchMinusTab = await props.pagefind.search(query || null, {
-      sort: { classification: 'asc' },
-      filters: Object.fromEntries(
-        Object.entries(searchFilters).filter(([key]) => key !== props.tabbedFilter),
-      ),
-    })
-
-    // Update the UI with the main search results
-    await updateFiltersAndResults(searchResults)
-
-    // If using tabs but none is selected, select either the default tab
-    // or the first available tab from the results
-    if (props.tabbedFilter && !activeTab.value && tabs.value.length > 0) {
-      activeTab.value = props.defaultTab || tabs.value[0].value
-    }
-
-    // Update the tab counts using results from the secondary search
-    // This ensures accurate counts for all tabs regardless of current tab selection
+    // Calculate tab counts if needed
     if (props.tabbedFilter) {
+      // Perform secondary search without tab filter
+      const filtersWithoutTab = { ...searchFilters }
+      delete filtersWithoutTab[props.tabbedFilter]
+
+      const searchMinusTab = await props.pagefind
+        .search(query || null, {
+          sort: { classification: 'asc' },
+          filters: filtersWithoutTab,
+        })
+        .catch((error: Error) => {
+          console.error('Tab count search failed:', error)
+          return { filters: {} }
+        })
+
+      // Update UI with results
+      await updateFiltersAndResults(searchResults)
       calculateTabCounts(searchMinusTab.filters)
+
+      // Handle tab selection
+      if (!activeTab.value && tabs.value.length > 0) {
+        activeTab.value = props.defaultTab || tabs.value[0].value
+      }
+    } else {
+      // Update UI with results for non-tabbed search
+      await updateFiltersAndResults(searchResults)
     }
   } catch (error) {
     console.error('Search failed:', error)
+    results.value = []
+    pageResults.value = []
+    totalResults.value = 0
   }
+}
+
+function getSearchFilters() {
+  const searchFilters: { [key: string]: string[] } = {}
+
+  // Add tab filter if using tabs and one is selected
+  if (props.tabbedFilter && activeTab.value) {
+    searchFilters[props.tabbedFilter] = [activeTab.value]
+  }
+
+  // Add other selected filters
+  Object.entries(selectedFilters.value).forEach(([group, values]) => {
+    if (values.length > 0) {
+      searchFilters[group] = values
+    }
+  })
+
+  return searchFilters
 }
 
 /**

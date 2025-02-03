@@ -7,14 +7,15 @@
   "types": "./dist/types/index.d.ts",
   "files": [
     "dist",
-    "src/components"
+    "src/types"
   ],
   "exports": {
     ".": {
-      "types": "./dist/types/index.d.ts",
+      "types": "./src/types/index.d.ts",
       "import": "./dist/pagefind-vue.es.js",
       "require": "./dist/pagefind-vue.umd.js"
-    }
+    },
+    "./style.css": "./dist/pagefind-vue.css"
   },
   "scripts": {
     "dev": "vite",

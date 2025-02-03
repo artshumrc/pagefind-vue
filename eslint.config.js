@@ -32,6 +32,8 @@ export default [
   {
     rules: {
       '@typescript-eslint/no-unused-vars': 'off',
+      '@typescript-eslint/no-explicit-any': 'off', // Allow explicit any
+      '@typescript-eslint/no-implicit-any': 'warn', // Warn on implicit any
     },
   },
 ]

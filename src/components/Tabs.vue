@@ -1,8 +1,8 @@
 <template>
-  <div v-if="tabs?.length" class="tabs fade-section" :class="{ 'visible': visible }">
+  <div v-if="tabs?.length" class="tabs fade-section" :class="{ visible: visible }">
     <div role="tablist" class="tab-buttons">
-      <button 
-        v-for="tab in tabs" 
+      <button
+        v-for="tab in tabs"
         :key="tab.value"
         :id="`tab-${tab.value}`"
         role="tab"
@@ -20,47 +20,46 @@
 </template>
 
 <script setup lang="ts">
-import type { Tab } from './types';
+import type { Tab } from './types'
 
-const props = defineProps<{
-  modelValue: string;
-  tabs: Tab[];
-  visible: boolean;
-  filterName?: string;
-}>();
+defineProps<{
+  modelValue: string
+  tabs: Tab[]
+  visible: boolean
+  filterName?: string
+}>()
 
 const emit = defineEmits<{
-  (e: 'update:modelValue', value: string): void;
-}>();
+  (e: 'update:modelValue', value: string): void
+}>()
 
 const handleTabClick = (value: string) => {
-  emit('update:modelValue', value);
-};
+  emit('update:modelValue', value)
+}
 
 const handleTabKeydown = (event: KeyboardEvent) => {
-  const tabButtons = Array.from(document.querySelectorAll('[role="tab"]'));
-  const currentIndex = tabButtons.findIndex(tab => tab === event.target);
+  const tabButtons = Array.from(document.querySelectorAll('[role="tab"]'))
+  const currentIndex = tabButtons.findIndex((tab) => tab === event.target)
 
-  let newIndex: number;
+  let newIndex: number
   switch (event.key) {
     case 'ArrowLeft':
-      newIndex = currentIndex - 1;
-      if (newIndex < 0) newIndex = tabButtons.length - 1;
-      break;
+      newIndex = currentIndex - 1
+      if (newIndex < 0) newIndex = tabButtons.length - 1
+      break
     case 'ArrowRight':
-      newIndex = currentIndex + 1;
-      if (newIndex >= tabButtons.length) newIndex = 0;
-      break;
+      newIndex = currentIndex + 1
+      if (newIndex >= tabButtons.length) newIndex = 0
+      break
     default:
-      return;
+      return
   }
 
-  const newTab = tabButtons[newIndex] as HTMLButtonElement;
-  const newValue = newTab.id.replace('tab-', '');
-  event.preventDefault();
-  newTab.focus();
-  newTab.click();
-};
+  const newTab = tabButtons[newIndex] as HTMLButtonElement
+  event.preventDefault()
+  newTab.focus()
+  newTab.click()
+}
 </script>
 
 <style scoped>
@@ -84,7 +83,7 @@ button {
   min-width: fit-content;
 }
 
-[role="tab"] {
+[role='tab'] {
   padding: 0.5rem 1rem;
   cursor: pointer;
   border: 1px solid #ccc;
@@ -92,15 +91,15 @@ button {
   border-radius: 4px;
 }
 
-[role="tab"][aria-selected="true"] {
+[role='tab'][aria-selected='true'] {
   background: #eee;
   color: black;
   border-color: #999;
   font-weight: bold !important;
 }
 
-[role="tab"]:focus {
-  outline: 2px solid #4CAF50;
+[role='tab']:focus {
+  outline: 2px solid #4caf50;
   outline-offset: 2px;
 }
 
