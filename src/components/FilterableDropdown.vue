@@ -414,6 +414,7 @@ onMounted(() => {
 }
 
 .dropdown-icon {
+  color: var(--pagefind-vue-fd-chevron-color, 'currentColor');
   position: absolute;
   right: 0.5rem;
   top: 0;
