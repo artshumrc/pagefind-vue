@@ -14,8 +14,7 @@
       "types": "./dist/types/index.d.ts",
       "import": "./dist/pagefind-vue.es.js",
       "require": "./dist/pagefind-vue.umd.js"
-    },
-    "./src/components/*": "./src/components/*"
+    }
   },
   "scripts": {
     "dev": "vite",
