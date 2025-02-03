@@ -66,7 +66,7 @@
 
 <script lang="ts" setup>
 import { ref, computed, watch, onMounted } from 'vue'
-import ChevronIcon from '@/components/icons/ChevronIcon.vue'
+import ChevronIcon from './icons/ChevronIcon.vue'
 import XIcon from './icons/XIcon.vue'
 import type { Option } from './types'
 
