@@ -26,7 +26,7 @@
       >
         <XIcon size="16" color="#000" />
       </button>
-      <ChevronIcon direction="down" class="dropdown-icon" />
+      <ChevronIcon direction="down" class="dropdown-icon" color="#000" />
     </div>
 
     <input :id="`${name}_hidden_input`" type="hidden" :name="name" :value="modelValue" />
@@ -414,7 +414,6 @@ onMounted(() => {
 }
 
 .dropdown-icon {
-  color: var(--pagefind-vue-fd-chevron-color, 'black');
   position: absolute;
   right: 0.5rem;
   top: 0;
