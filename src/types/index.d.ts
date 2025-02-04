@@ -4,7 +4,7 @@ declare module 'pagefind-vue' {
 
   export const Search: DefineComponent<{
     pagefind: any
-    tabbedFilter?: boolean
+    tabbedFilter?: string
     defaultTab?: string
     excludeFilters?: string[]
     checkboxToDropdownBreakpoint?: number
