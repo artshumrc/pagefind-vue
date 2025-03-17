@@ -93,9 +93,7 @@ const displayValue = computed(() => searchText.value)
 
 const filteredOptions = computed(() => {
   const filter = searchText.value.toLowerCase()
-  return props.options
-    .filter((option) => option.label.toLowerCase().includes(filter))
-    .sort((a, b) => b.count - a.count)
+  return props.options.filter((option) => option.label.toLowerCase().includes(filter))
 })
 
 watch(
