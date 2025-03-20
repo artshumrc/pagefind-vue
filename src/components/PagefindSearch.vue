@@ -27,6 +27,7 @@
         :selected-filters="selectedFilters"
         :sorted-groups="sortedFilterGroups"
         :filters-definition="filtersDefinition"
+        :customSortFunctions="customSortFunctions"
         @update:filters="handleFilterUpdate"
       />
 
@@ -62,6 +63,7 @@ const props = defineProps<{
   defaultTab?: string
   excludeFilters?: string[]
   checkboxToDropdownBreakpoint?: number
+  customSortFunctions?: Record<string, (a: any, b: any) => number>
 }>()
 
 const searchQuery = ref('')
@@ -147,10 +149,23 @@ const filteredFilters = computed(() => {
   )
 })
 
+function defaultSort(a: [string, number], b: [string, number]): number {
+  // Sort by facet count descending
+  return b[1] - a[1]
+}
+
+function customSort(groupName: string) {
+  const customSortFunction = props.customSortFunctions?.[groupName]
+  if (!customSortFunction) {
+    return defaultSort
+  }
+  return customSortFunction
+}
+
 const filteredKeywordFilters = computed(() => {
   if (!filters.value) return {}
 
-  return Object.fromEntries(
+  let f = Object.fromEntries(
     Object.entries(filters.value)
       .filter(
         ([key]) =>
@@ -159,9 +174,10 @@ const filteredKeywordFilters = computed(() => {
       )
       .map(([key, group]) => [
         key,
-        Object.fromEntries(Object.entries(group).sort(([, a], [, b]) => b - a)),
+        Object.fromEntries(Object.entries(group).sort(customSort(key))),
       ]),
   )
+  return f
 })
 
 const sortedFilterGroups = computed(() => {
