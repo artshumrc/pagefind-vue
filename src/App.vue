@@ -7,6 +7,7 @@
     :default-tab="defaultTab"
     :exclude-filters="excludeFilters"
     :custom-sort-functions="customSortFunctions"
+    :default-sort-function="customDefaultSort"
   >
   </Search>
 </template>
@@ -72,6 +73,11 @@ function sortByList(list: string[]): FilterSortFunction {
 // Define customSortFunctions with the correct type
 const customSortFunctions: CustomSortFunctions = {
   Abundance: sortByList(abundanceSortList),
+}
+
+function customDefaultSort(a: [string, number], b: [string, number]): number {
+  // Sort by facet count ascending (internal default is descending)
+  return a[1] - b[1]
 }
 </script>
 

@@ -1,3 +1,4 @@
+<!-- This is named "PagefindSearch" because it Vue convention to not have single-word components. It is exported and consumed as `Search`, however. -->
 <template>
   <div class="search-container">
     <section class="border-bottom fade-section" :class="{ visible: mounted }">
@@ -27,7 +28,7 @@
         :selected-filters="selectedFilters"
         :sorted-groups="sortedFilterGroups"
         :filters-definition="filtersDefinition"
-        :customSortFunctions="customSortFunctions"
+        :custom-sort-functions="customSortFunctions"
         @update:filters="handleFilterUpdate"
       />
 
@@ -64,6 +65,7 @@ const props = defineProps<{
   excludeFilters?: string[]
   checkboxToDropdownBreakpoint?: number
   customSortFunctions?: Record<string, (a: any, b: any) => number>
+  defaultSortFunction?: (a: [string, number], b: [string, number]) => number
 }>()
 
 const searchQuery = ref('')
@@ -156,10 +158,16 @@ function defaultSort(a: [string, number], b: [string, number]): number {
 
 function customSort(groupName: string) {
   const customSortFunction = props.customSortFunctions?.[groupName]
-  if (!customSortFunction) {
-    return defaultSort
+  // Use the custom filter-specific sort function if it exists
+  if (customSortFunction) {
+    return customSortFunction
   }
-  return customSortFunction
+  // Use the default sort function provided by the user if it exists
+  if (props.defaultSortFunction) {
+    return props.defaultSortFunction
+  }
+  // Fall back to built-in default sort if no user-defined sorts are provided
+  return defaultSort
 }
 
 const filteredKeywordFilters = computed(() => {
