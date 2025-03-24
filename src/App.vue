@@ -9,6 +9,7 @@
     :custom-sort-functions="customSortFunctions"
     :default-sort-function="customDefaultSort"
     :exclude-filter-options="excludOptions"
+    :filter-group-sort-function="sortFilterGroupsByList"
   >
   </Search>
 </template>
@@ -16,7 +17,11 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
 import Search from './components/PagefindSearch.vue'
-import type { FilterSortFunction, CustomSortFunctions } from './components/types'
+import type {
+  FilterSortFunction as FilterOptionsSortFunction,
+  CustomSortFunctions,
+  Filter,
+} from './components/types'
 
 let pagefindPath: string
 if (import.meta.env.PROD) {
@@ -48,7 +53,7 @@ const defaultTab = 'Species'
 const excludeFilters = ['Entry Type']
 
 // Create a direct sort function instead of a function that returns a sort function
-function sortByList(list: string[]): FilterSortFunction {
+function sortByList(list: string[]): FilterOptionsSortFunction {
   return (a: [string, number], b: [string, number]): number => {
     // Check if either value is in the priority list
     const indexA = list.indexOf(a[0])
@@ -72,6 +77,31 @@ function sortByList(list: string[]): FilterSortFunction {
     // Case 4: Neither is in priority list, sort by facet count
     return b[1] - a[1]
   }
+}
+
+const sortedFilterList = ['Crystal system', 'Abundance', 'Status at Tsumeb', 'Occurence']
+function sortFilterGroupsByList(a: string, b: string, filters: Filter): number {
+  // Check if either value is in the priority list
+  const indexA = sortedFilterList.indexOf(a)
+  const indexB = sortedFilterList.indexOf(b)
+
+  // Case 1: Both strings are in the priority list
+  if (indexA >= 0 && indexB >= 0) {
+    return indexA - indexB // Sort by priority list order
+  }
+
+  // Case 2: Only a is in the priority list
+  if (indexA >= 0) {
+    return -1 // a comes first
+  }
+
+  // Case 3: Only b is in the priority list
+  if (indexB >= 0) {
+    return 1 // b comes first
+  }
+
+  // Case 4: Neither is in priority list, sort by number of filter options
+  return Object.keys(filters[b] || {}).length - Object.keys(filters[a] || {}).length
 }
 
 // Define customSortFunctions with the correct type

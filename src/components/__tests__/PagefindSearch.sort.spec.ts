@@ -225,4 +225,45 @@ describe('PagefindSearch filter options user-passed sort function logic', () => 
     expect(Object.keys(vm.filteredKeywordFilters.author)).toEqual(['Alice Johnson', 'John Doe'])
     expect(Object.keys(vm.filteredKeywordFilters.author)).not.toContain('Jane Smith')
   })
+
+  it('should sort filter groups using filterGroupSortFunction when provided', async () => {
+    // Custom alphabetical sort for filter groups
+    const filterGroupSortFunction = (a: string, b: string) => {
+      return a.localeCompare(b)
+    }
+
+    const wrapper = mount(PagefindSearch, {
+      props: {
+        pagefind: mockPagefind,
+        filterGroupSortFunction,
+      },
+      global: {
+        stubs: {
+          Filters: true,
+          Results: true,
+          Tabs: true,
+        },
+      },
+    })
+
+    await nextTick()
+
+    // Verify sortedFilterGroups computed property uses the custom sort
+    const vm = wrapper.vm as any
+
+    // Filter groups should be sorted alphabetically
+    expect(vm.sortedFilterGroups).toEqual(['author', 'category'])
+
+    // Now test with a reverse alphabetical sort
+    const reverseAlphabeticalSort = (a: string, b: string) => {
+      return b.localeCompare(a)
+    }
+
+    await wrapper.setProps({
+      filterGroupSortFunction: reverseAlphabeticalSort,
+    })
+
+    // Filter groups should now be sorted in reverse alphabetical order
+    expect(vm.sortedFilterGroups).toEqual(['category', 'author'])
+  })
 })

@@ -67,6 +67,7 @@ const props = defineProps<{
   checkboxToDropdownBreakpoint?: number
   customSortFunctions?: Record<string, (a: any, b: any) => number>
   defaultSortFunction?: (a: [string, number], b: [string, number]) => number
+  filterGroupSortFunction?: (a: string, b: string, filters: Filter) => number
 }>()
 
 const searchQuery = ref('')
@@ -236,6 +237,13 @@ const filteredKeywordFilters = computed(() => {
 
 const sortedFilterGroups = computed(() => {
   if (!filters.value) return []
+
+  if (props.filterGroupSortFunction) {
+    return Object.keys(filteredFilters.value).sort((a, b) =>
+      props.filterGroupSortFunction!(a, b, filters.value),
+    )
+  }
+
   return Object.keys(filteredFilters.value).sort(
     (a, b) => Object.keys(filters.value[b]).length - Object.keys(filters.value[a]).length,
   )
