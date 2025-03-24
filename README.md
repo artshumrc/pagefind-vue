@@ -59,11 +59,13 @@ These are the CSS variables available to be overidden and their default values:
 }
 ```
 
-## Custom Sort Functions
+## Customize Filters and Filter Options
+
+### Sort Filter Options
 
 By default, filter options are sorted by their facet count in descending order. However, you can provide custom sorting functions to control the order of filter options for specific filters.
 
-### Basic Usage
+#### Basic Usage
 
 Pass a `customSortFunctions` object to the `Search` component, where each key is the filter name and the value is a sort function:
 
@@ -88,7 +90,7 @@ const customSortFunctions = {
 }
 ```
 
-### Deterministic Sorting with a Predefined List
+#### Deterministic Sorting with a Predefined List
 
 For cases where you need a specific, deterministic order for filter options not based on something dynamic like alphabetical or numerical sorting, you can create a sort function that uses a predefined list of values:
 
@@ -127,6 +129,24 @@ function sortByList(list: string[]): FilterSortFunction {
 const customSortFunctions = {
   Abundance: sortByList(abundanceSortList),
 }
+```
+
+### Exclude Sort Filter Options
+
+To exclude options for a specific filter, pass an object whose keys are the filter names and whose values are arrays of filter option names to exclude, e.g.
+
+```vue
+<Search
+  ...
+  :=":exclude-filter-options="excludedOptions"">
+  ...
+</Search>
+
+<script>
+const excludedOptions = {
+  Abundance: ["N/A", "Unknown"]
+}
+</script>
 ```
 
 ## Recommended IDE Setup
