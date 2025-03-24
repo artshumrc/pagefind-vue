@@ -1,3 +1,4 @@
+<!-- This is named "PagefindSearch" because it Vue convention to not have single-word components. It is exported and consumed as `Search`, however. -->
 <template>
   <div class="search-container">
     <section class="border-bottom fade-section" :class="{ visible: mounted }">
@@ -27,6 +28,7 @@
         :selected-filters="selectedFilters"
         :sorted-groups="sortedFilterGroups"
         :filters-definition="filtersDefinition"
+        :custom-sort-functions="customSortFunctions"
         @update:filters="handleFilterUpdate"
       />
 
@@ -61,7 +63,11 @@ const props = defineProps<{
   tabbedFilter?: string
   defaultTab?: string
   excludeFilters?: string[]
+  excludeFilterOptions?: Record<string, string[]>
   checkboxToDropdownBreakpoint?: number
+  customSortFunctions?: Record<string, (a: any, b: any) => number>
+  defaultSortFunction?: (a: [string, number], b: [string, number]) => number
+  filterGroupSortFunction?: (a: string, b: string, filters: Filter) => number
 }>()
 
 const searchQuery = ref('')
@@ -126,46 +132,118 @@ onMounted(async () => {
 const filteredFilters = computed(() => {
   if (!filters.value) return {}
 
+  let result = {}
+
   if (props.filtersDefinition) {
     // If the user has supplied filtersDefinition,
     // limit the filters to only those defined
-    return Object.fromEntries(
+    result = Object.fromEntries(
       Object.entries(filters.value).filter(
         ([key]) => key !== props.tabbedFilter && props.filtersDefinition?.hasOwnProperty(key),
       ),
     )
+  } else {
+    // If no filtersDefinition, return all filters
+    // and handle them with default behavior
+    result = Object.fromEntries(
+      Object.entries(filters.value).filter(
+        ([key]) =>
+          key !== props.tabbedFilter &&
+          (!props.excludeFilters || !props.excludeFilters.includes(key)),
+      ),
+    )
   }
 
-  // If no filtersDefinition, return all filters
-  // and handle them with default behavior
-  return Object.fromEntries(
-    Object.entries(filters.value).filter(
-      ([key]) =>
-        key !== props.tabbedFilter &&
-        (!props.excludeFilters || !props.excludeFilters.includes(key)),
-    ),
-  )
+  // Filter out excluded filter options
+  if (props.excludeFilterOptions) {
+    return Object.fromEntries(
+      Object.entries(result).map(([key, options]) => {
+        const excludedOptions = props.excludeFilterOptions?.[key] || []
+        if (excludedOptions.length > 0) {
+          // Remove excluded options from this filter group
+          return [
+            key,
+            Object.fromEntries(
+              Object.entries(options as Record<string, number>).filter(
+                ([option]) => !excludedOptions.includes(option),
+              ),
+            ),
+          ]
+        }
+        return [key, options]
+      }),
+    )
+  }
+
+  return result
 })
+
+function defaultSort(a: [string, number], b: [string, number]): number {
+  // Sort by facet count descending
+  return b[1] - a[1]
+}
+
+function customSort(groupName: string) {
+  const customSortFunction = props.customSortFunctions?.[groupName]
+  // Use the custom filter-specific sort function if it exists
+  if (customSortFunction) {
+    return customSortFunction
+  }
+  // Use the default sort function provided by the user if it exists
+  if (props.defaultSortFunction) {
+    return props.defaultSortFunction
+  }
+  // Fall back to built-in default sort if no user-defined sorts are provided
+  return defaultSort
+}
 
 const filteredKeywordFilters = computed(() => {
   if (!filters.value) return {}
 
-  return Object.fromEntries(
-    Object.entries(filters.value)
-      .filter(
-        ([key]) =>
-          key !== props.tabbedFilter &&
-          (!props.excludeFilters || !props.excludeFilters.includes(key)),
-      )
-      .map(([key, group]) => [
-        key,
-        Object.fromEntries(Object.entries(group).sort(([, a], [, b]) => b - a)),
-      ]),
+  // First filter by key (filter group)
+  let filteredByKey = Object.entries(filters.value).filter(
+    ([key]) =>
+      key !== props.tabbedFilter && (!props.excludeFilters || !props.excludeFilters.includes(key)),
   )
+
+  // Then filter out excluded options within each group
+  if (props.excludeFilterOptions) {
+    filteredByKey = filteredByKey.map(([key, options]) => {
+      const excludedOptions = props.excludeFilterOptions?.[key] || []
+      if (excludedOptions.length > 0) {
+        // Remove excluded options from this filter group
+        return [
+          key,
+          Object.fromEntries(
+            Object.entries(options as Record<string, number>).filter(
+              ([option]) => !excludedOptions.includes(option),
+            ),
+          ),
+        ]
+      }
+      return [key, options]
+    })
+  }
+
+  // Finally, sort the filter options
+  let f = Object.fromEntries(
+    filteredByKey.map(([key, group]) => [
+      key,
+      Object.fromEntries(Object.entries(group).sort(customSort(key))),
+    ]),
+  )
+  return f
 })
 
 const sortedFilterGroups = computed(() => {
   if (!filters.value) return []
+
+  if (props.filterGroupSortFunction) {
+    return Object.keys(filteredFilters.value).sort((a, b) =>
+      props.filterGroupSortFunction!(a, b, filters.value),
+    )
+  }
+
   return Object.keys(filteredFilters.value).sort(
     (a, b) => Object.keys(filters.value[b]).length - Object.keys(filters.value[a]).length,
   )

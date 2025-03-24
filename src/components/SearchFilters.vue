@@ -1,11 +1,13 @@
 <template>
-  <aside class="filters-sidebar fade-section" :class="{ 'visible': mounted }">
-    <h2 style="margin-bottom: 1rem;">Filters</h2>
-
-    <div v-for="(filterGroup, groupName) in filteredFilters"
-         :key="groupName"
-         class="filter-group">
-      <template v-if="filterGroup && Object.values(filterGroup).some(value => value > 0)">
+  <aside class="filters-sidebar fade-section" :class="{ visible: mounted }">
+    <h2 style="margin-bottom: 1rem">Filters</h2>
+    <div v-for="groupName in sortedGroups" :key="groupName" class="filter-group">
+      <template
+        v-if="
+          filteredFilters[groupName] &&
+          Object.values(filteredFilters[groupName]).some((value) => value > 0)
+        "
+      >
         <h3>{{ groupName }}</h3>
         <FilterComponent
           :name="groupName"
@@ -21,30 +23,31 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue';
-import FilterComponent from './FilterComponent.vue';
-import type { FiltersDefinition } from './types';
+import { ref, onMounted } from 'vue'
+import FilterComponent from './FilterComponent.vue'
+import type { FiltersDefinition } from './types'
 
 defineProps<{
-  filteredFilters: Record<string, { [key: string]: number }>;
-  filteredKeywordFilters: { [key: string]: { [key: string]: number } };
-  selectedFilters: { [key: string]: string[] };
-  checkboxToDropdownBreakpoint: number;
-  multiSelectFilters?: string[];
-  filtersDefinition?: FiltersDefinition;
-}>();
+  filteredFilters: Record<string, { [key: string]: number }>
+  filteredKeywordFilters: { [key: string]: { [key: string]: number } }
+  selectedFilters: { [key: string]: string[] }
+  checkboxToDropdownBreakpoint: number
+  multiSelectFilters?: string[]
+  filtersDefinition?: FiltersDefinition
+  sortedGroups?: string[]
+}>()
 
-const emit = defineEmits(['update:filters']);
+const emit = defineEmits(['update:filters'])
 
-const mounted = ref(false);
+const mounted = ref(false)
 
 onMounted(() => {
-  mounted.value = true;
-});
+  mounted.value = true
+})
 
 const handleSingleSelect = (group: string, value: string | string[]) => {
-  emit('update:filters', group, value);
-};
+  emit('update:filters', group, value)
+}
 </script>
 
 <style scoped>
@@ -86,11 +89,11 @@ const handleSingleSelect = (group: string, value: string | string[]) => {
   cursor: pointer;
 }
 
-.filter-group input[type="checkbox"] {
+.filter-group input[type='checkbox'] {
   cursor: pointer;
 }
 
-.filter-group input[type="text"] {
+.filter-group input[type='text'] {
   width: 100%;
   padding: 0.5rem;
   margin-bottom: 0.5rem;
