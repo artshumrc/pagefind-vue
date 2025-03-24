@@ -8,6 +8,7 @@
     :exclude-filters="excludeFilters"
     :custom-sort-functions="customSortFunctions"
     :default-sort-function="customDefaultSort"
+    :exclude-filter-options="excludOptions"
   >
   </Search>
 </template>
@@ -38,6 +39,9 @@ onMounted(async () => {
 })
 
 const abundanceSortList = ['Very rare', 'Extremely rare', 'Very common', 'Common']
+const excludOptions = {
+  Abundance: ['N/A'],
+}
 
 const tabbedFilter = 'Classification'
 const defaultTab = 'Species'

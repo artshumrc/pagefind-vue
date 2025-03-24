@@ -63,6 +63,7 @@ const props = defineProps<{
   tabbedFilter?: string
   defaultTab?: string
   excludeFilters?: string[]
+  excludeFilterOptions?: Record<string, string[]>
   checkboxToDropdownBreakpoint?: number
   customSortFunctions?: Record<string, (a: any, b: any) => number>
   defaultSortFunction?: (a: [string, number], b: [string, number]) => number
@@ -130,25 +131,50 @@ onMounted(async () => {
 const filteredFilters = computed(() => {
   if (!filters.value) return {}
 
+  let result = {}
+
   if (props.filtersDefinition) {
     // If the user has supplied filtersDefinition,
     // limit the filters to only those defined
-    return Object.fromEntries(
+    result = Object.fromEntries(
       Object.entries(filters.value).filter(
         ([key]) => key !== props.tabbedFilter && props.filtersDefinition?.hasOwnProperty(key),
       ),
     )
+  } else {
+    // If no filtersDefinition, return all filters
+    // and handle them with default behavior
+    result = Object.fromEntries(
+      Object.entries(filters.value).filter(
+        ([key]) =>
+          key !== props.tabbedFilter &&
+          (!props.excludeFilters || !props.excludeFilters.includes(key)),
+      ),
+    )
   }
 
-  // If no filtersDefinition, return all filters
-  // and handle them with default behavior
-  return Object.fromEntries(
-    Object.entries(filters.value).filter(
-      ([key]) =>
-        key !== props.tabbedFilter &&
-        (!props.excludeFilters || !props.excludeFilters.includes(key)),
-    ),
-  )
+  // Filter out excluded filter options
+  if (props.excludeFilterOptions) {
+    return Object.fromEntries(
+      Object.entries(result).map(([key, options]) => {
+        const excludedOptions = props.excludeFilterOptions?.[key] || []
+        if (excludedOptions.length > 0) {
+          // Remove excluded options from this filter group
+          return [
+            key,
+            Object.fromEntries(
+              Object.entries(options as Record<string, number>).filter(
+                ([option]) => !excludedOptions.includes(option),
+              ),
+            ),
+          ]
+        }
+        return [key, options]
+      }),
+    )
+  }
+
+  return result
 })
 
 function defaultSort(a: [string, number], b: [string, number]): number {
@@ -173,17 +199,37 @@ function customSort(groupName: string) {
 const filteredKeywordFilters = computed(() => {
   if (!filters.value) return {}
 
+  // First filter by key (filter group)
+  let filteredByKey = Object.entries(filters.value).filter(
+    ([key]) =>
+      key !== props.tabbedFilter && (!props.excludeFilters || !props.excludeFilters.includes(key)),
+  )
+
+  // Then filter out excluded options within each group
+  if (props.excludeFilterOptions) {
+    filteredByKey = filteredByKey.map(([key, options]) => {
+      const excludedOptions = props.excludeFilterOptions?.[key] || []
+      if (excludedOptions.length > 0) {
+        // Remove excluded options from this filter group
+        return [
+          key,
+          Object.fromEntries(
+            Object.entries(options as Record<string, number>).filter(
+              ([option]) => !excludedOptions.includes(option),
+            ),
+          ),
+        ]
+      }
+      return [key, options]
+    })
+  }
+
+  // Finally, sort the filter options
   let f = Object.fromEntries(
-    Object.entries(filters.value)
-      .filter(
-        ([key]) =>
-          key !== props.tabbedFilter &&
-          (!props.excludeFilters || !props.excludeFilters.includes(key)),
-      )
-      .map(([key, group]) => [
-        key,
-        Object.fromEntries(Object.entries(group).sort(customSort(key))),
-      ]),
+    filteredByKey.map(([key, group]) => [
+      key,
+      Object.fromEntries(Object.entries(group).sort(customSort(key))),
+    ]),
   )
   return f
 })

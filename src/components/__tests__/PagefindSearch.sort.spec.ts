@@ -193,4 +193,36 @@ describe('PagefindSearch filter options user-passed sort function logic', () => 
       'John Doe',
     ])
   })
+
+  it('should exclude specified filter options when using excludeFilterOptions', async () => {
+    const wrapper = mount(PagefindSearch, {
+      props: {
+        pagefind: mockPagefind,
+        excludeFilterOptions: {
+          category: ['Art'],
+          author: ['Jane Smith'],
+        },
+      },
+      global: {
+        stubs: {
+          Filters: true,
+          Results: true,
+          Tabs: true,
+        },
+      },
+    })
+
+    await nextTick()
+
+    // Verify filteredKeywordFilters computed property excludes the specified options
+    const vm = wrapper.vm as any
+
+    // Category should not include 'Art'
+    expect(Object.keys(vm.filteredKeywordFilters.category)).toEqual(['Technology', 'Science'])
+    expect(Object.keys(vm.filteredKeywordFilters.category)).not.toContain('Art')
+
+    // Author should not include 'Jane Smith'
+    expect(Object.keys(vm.filteredKeywordFilters.author)).toEqual(['Alice Johnson', 'John Doe'])
+    expect(Object.keys(vm.filteredKeywordFilters.author)).not.toContain('Jane Smith')
+  })
 })
