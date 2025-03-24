@@ -61,7 +61,43 @@ These are the CSS variables available to be overidden and their default values:
 
 ## Customize Filters and Filter Options
 
-### Sort Filter Options
+## Sort Filter Display Order
+
+To control the display order of the filters, consumers can pass a custom sort function. For example, see below for how to pass a custom search function that orders the display of filters according to a list of filter names:
+
+```vue
+<Search :filter-group-sort-function="sortFilterGroupsByList">
+</Search>
+
+<script>
+  const sortedFilterList = ['Crystal system', 'Abundance', 'Status at Tsumeb', 'Occurence']
+  function sortFilterGroupsByList(a: string, b: string, filters: Filter): number {
+    // Check if either value is in the priority list
+    const indexA = sortedFilterList.indexOf(a)
+    const indexB = sortedFilterList.indexOf(b)
+
+    // Case 1: Both strings are in the priority list
+    if (indexA >= 0 && indexB >= 0) {
+      return indexA - indexB // Sort by priority list order
+    }
+
+    // Case 2: Only a is in the priority list
+    if (indexA >= 0) {
+      return -1 // a comes first
+    }
+
+    // Case 3: Only b is in the priority list
+    if (indexB >= 0) {
+      return 1 // b comes first
+    }
+
+    // Case 4: Neither is in priority list, sort by number of filter options
+    return Object.keys(filters[b] || {}).length - Object.keys(filters[a] || {}).length
+}
+</script>
+```
+
+### Sort Filter Options Display ORder
 
 By default, filter options are sorted by their facet count in descending order. However, you can provide custom sorting functions to control the order of filter options for specific filters.
 
@@ -70,7 +106,7 @@ By default, filter options are sorted by their facet count in descending order. 
 Pass a `customSortFunctions` object to the `Search` component, where each key is the filter name and the value is a sort function:
 
 ```vue
-<Search ... :custom-sort-functions="customSortFunctions" ...></Search>
+<Search :custom-sort-functions="customSortFunctions"></Search>
 ```
 
 Each sort function receives two parameters of type `[string, number]`, representing the filter option name (as defined in the Pagefind HTMl attributes) and its count:
