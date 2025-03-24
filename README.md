@@ -61,7 +61,7 @@ These are the CSS variables available to be overidden and their default values:
 
 ## Customize Filters and Filter Options
 
-## Sort Filter Display Order
+### Sort Filter Display Order
 
 To control the display order of the filters, consumers can pass a custom sort function. For example, see below for how to pass a custom search function that orders the display of filters according to a list of filter names:
 
@@ -97,7 +97,7 @@ To control the display order of the filters, consumers can pass a custom sort fu
 </script>
 ```
 
-### Sort Filter Options Display ORder
+### Sort Filter Options Display Order
 
 By default, filter options are sorted by their facet count in descending order. However, you can provide custom sorting functions to control the order of filter options for specific filters.
 
