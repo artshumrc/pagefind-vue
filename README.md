@@ -185,6 +185,22 @@ const excludedOptions = {
 </script>
 ```
 
+### Ordering Results
+
+To provide a sort ordering, pass an object whose key(s) are sort names as defined by `data-pagefind-sort` and values are either `asc` or `desc` for ascending or descending sorting order.
+
+```vue
+<Search
+  ...
+  :=":result-sort="alphabeticalSortOrder"">
+  ...
+</Search>
+
+<script>
+const alphabeticalSortOrder = {title: "desc"}
+</script>
+```
+
 ## Recommended IDE Setup
 
 [VSCode](https://code.visualstudio.com/) + [Volar](https://marketplace.visualstudio.com/items?itemName=Vue.volar) (and disable Vetur).
