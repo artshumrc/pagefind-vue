@@ -1,5 +1,4 @@
 <template>
-    <div>It worked!</div>
     <div>
         <router-link to="/index1">Index 1</router-link>
     </div>
