@@ -35,3 +35,7 @@ export type FilterSortFunction = (a: [string, number], b: [string, number]) => n
 export interface CustomSortFunctions {
   [key: string]: FilterSortFunction
 }
+
+export type SortOption = {
+  [key: string]: 'asc' | 'desc';
+};
