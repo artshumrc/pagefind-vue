@@ -39,7 +39,7 @@ function customDefaultSort(a: [string, number], b: [string, number]): number {
   return a[1] - b[1]
 }
 
-const alphaSort: SortOption = {title: 'desc'}
+const alphaSort: SortOption = {title: 'asc'}
 </script>
 
 <style scoped>
