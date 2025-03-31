@@ -4,15 +4,8 @@ import { nextTick } from 'vue'
 import PagefindSearch from '../PagefindSearch.vue'
 import { mock } from 'node:test'
 
-const mockResults = [
-    {"title": "A"},
-    {"title": "B"},
-    {"title": "C"},
-]
-
 const mockPagefind = {
   search: vi.fn().mockResolvedValue({
-    results: mockResults,
     total: 0,
   }),
   filters: vi.fn().mockResolvedValue({}),
