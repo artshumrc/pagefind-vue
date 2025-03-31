@@ -2,7 +2,6 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { mount } from '@vue/test-utils'
 import { nextTick } from 'vue'
 import PagefindSearch from '../PagefindSearch.vue'
-import { mock } from 'node:test'
 
 const mockPagefind = {
   search: vi.fn().mockResolvedValue({
