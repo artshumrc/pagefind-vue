@@ -54,7 +54,7 @@ import { ref, onMounted, computed, watch, nextTick } from 'vue'
 import Tabs from './Tabs.vue'
 import Filters from './SearchFilters.vue'
 import Results from './SearchResults.vue'
-import type { FiltersDefinition, Filter, ResultData } from './types'
+import type { FiltersDefinition, Filter, ResultData, SortOption } from './types'
 
 const props = defineProps<{
   pagefind: any
@@ -68,6 +68,7 @@ const props = defineProps<{
   customSortFunctions?: Record<string, (a: any, b: any) => number>
   defaultSortFunction?: (a: [string, number], b: [string, number]) => number
   filterGroupSortFunction?: (a: string, b: string, filters: Filter) => number
+  resultSort?: SortOption
 }>()
 
 const searchQuery = ref('')
@@ -400,7 +401,7 @@ async function performSearch(query: string | null) {
     // Perform main search with all filters
     const searchResults = await props.pagefind
       .search(query || null, {
-        sort: { classification: 'asc' },
+        sort: props.resultSort || { classification: 'asc' },
         filters: searchFilters,
       })
       .catch((error: Error) => {
@@ -416,7 +417,7 @@ async function performSearch(query: string | null) {
 
       const searchMinusTab = await props.pagefind
         .search(query || null, {
-          sort: { classification: 'asc' },
+          sort: props.resultSort || { classification: 'asc' },
           filters: filtersWithoutTab,
         })
         .catch((error: Error) => {
