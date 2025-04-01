@@ -201,6 +201,18 @@ const alphabeticalSortOrder = {title: "desc"}
 </script>
 ```
 
+## Hiding the Search Bar
+
+If you want to hide the text search bar, you can pass a `showSearch` parameter with the value `false` to the Search component
+
+```vue
+<Search
+  ...
+  :=":showSearch="false"">
+  ...
+</Search>
+```
+
 ## Recommended IDE Setup
 
 [VSCode](https://code.visualstudio.com/) + [Volar](https://marketplace.visualstudio.com/items?itemName=Vue.volar) (and disable Vetur).
