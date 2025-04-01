@@ -1,7 +1,7 @@
 <!-- This is named "PagefindSearch" because it Vue convention to not have single-word components. It is exported and consumed as `Search`, however. -->
 <template>
   <div class="search-container">
-    <section class="border-bottom fade-section" :class="{ visible: mounted }">
+    <section v-if="showSearch" class="border-bottom fade-section" :class="{ visible: mounted }">
       <form class="search-form" @submit.prevent="performSearch(searchQuery)">
         <div class="input-wrapper">
           <label for="search" class="visually-hidden">Search</label>
@@ -56,20 +56,23 @@ import Filters from './SearchFilters.vue'
 import Results from './SearchResults.vue'
 import type { FiltersDefinition, Filter, ResultData, SortOption } from './types'
 
-const props = defineProps<{
-  pagefind: any
-  itemsPerPage?: number
-  filtersDefinition?: FiltersDefinition
-  tabbedFilter?: string
-  defaultTab?: string
-  excludeFilters?: string[]
-  excludeFilterOptions?: Record<string, string[]>
-  checkboxToDropdownBreakpoint?: number
-  customSortFunctions?: Record<string, (a: any, b: any) => number>
-  defaultSortFunction?: (a: [string, number], b: [string, number]) => number
-  filterGroupSortFunction?: (a: string, b: string, filters: Filter) => number
-  resultSort?: SortOption
-}>()
+const props = withDefaults(defineProps<{
+  pagefind: any;
+  itemsPerPage?: number;
+  filtersDefinition?: FiltersDefinition;
+  tabbedFilter?: string;
+  defaultTab?: string;
+  excludeFilters?: string[];
+  excludeFilterOptions?: Record<string, string[]>;
+  checkboxToDropdownBreakpoint?: number;
+  customSortFunctions?: Record<string, (a: any, b: any) => number>;
+  defaultSortFunction?: (a: [string, number], b: [string, number]) => number;
+  filterGroupSortFunction?: (a: string, b: string, filters: Filter) => number;
+  resultSort?: SortOption;
+  showSearch?: boolean;
+}>(), {
+  showSearch: true,
+});
 
 const searchQuery = ref('')
 const results = ref<any[]>([]) // raw search results
@@ -82,6 +85,7 @@ const currentPage = ref(1)
 const totalResults = ref(0)
 const activeTab = ref('')
 const selectedFilters = ref<{ [key: string]: string[] }>({})
+const showSearch = props.showSearch
 
 const validFilterKeys = computed(() => {
   // Any filters not returned from this should not be sent to Pagefind
