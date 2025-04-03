@@ -6,10 +6,9 @@
     <div>
         <router-link to="/index2">Index 2</router-link>
     </div>
-    <p>Example index with a custom default sort ordering</p>
+    <p>Example index with a custom default sort ordering and a hidden search bar</p>
 </template>
-  
+
 export default {
     name: 'Home'
 };
-  

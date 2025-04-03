@@ -5,6 +5,7 @@
     :pagefind="pagefind"
     :default-sort-function="customDefaultSort"
     :result-sort="alphaSort"
+    :show-keyword-input="false"
   >
   </Search>
 </template>
