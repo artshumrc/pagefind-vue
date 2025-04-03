@@ -208,7 +208,7 @@ If you want to hide the keyword search bar, you can pass a `showKeywordInput` pa
 ```vue
 <Search
   ...
-  :=":showKeyworkInput="false"">
+  :=":showKeywordInput="false"">
   ...
 </Search>
 ```
