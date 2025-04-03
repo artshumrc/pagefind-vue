@@ -1,7 +1,7 @@
 <!-- This is named "PagefindSearch" because it Vue convention to not have single-word components. It is exported and consumed as `Search`, however. -->
 <template>
   <div class="search-container">
-    <section v-if="showSearch" class="border-bottom fade-section" :class="{ visible: mounted }">
+    <section v-if="showKeywordInput" class="border-bottom fade-section" :class="{ visible: mounted }">
       <form class="search-form" @submit.prevent="performSearch(searchQuery)">
         <div class="input-wrapper">
           <label for="search" class="visually-hidden">Search</label>
@@ -69,9 +69,9 @@ const props = withDefaults(defineProps<{
   defaultSortFunction?: (a: [string, number], b: [string, number]) => number;
   filterGroupSortFunction?: (a: string, b: string, filters: Filter) => number;
   resultSort?: SortOption;
-  showSearch?: boolean;
+  showKeywordInput?: boolean;
 }>(), {
-  showSearch: true,
+  showKeywordInput: true,
 });
 
 const searchQuery = ref('')
@@ -85,7 +85,7 @@ const currentPage = ref(1)
 const totalResults = ref(0)
 const activeTab = ref('')
 const selectedFilters = ref<{ [key: string]: string[] }>({})
-const showSearch = props.showSearch
+const showKeywordInput = props.showKeywordInput
 
 const validFilterKeys = computed(() => {
   // Any filters not returned from this should not be sent to Pagefind

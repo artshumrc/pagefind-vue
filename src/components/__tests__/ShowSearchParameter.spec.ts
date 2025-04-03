@@ -18,11 +18,11 @@ describe('PagefindSearch show search parameter', () => {
   it('should show or hide the search field as appropriate', async () => {
     mockPagefind.search.mockClear()
 
-    //check that the search field is hidden when showSearch is false
+    //check that the search field is hidden when showKeywordInput is false
     const wrapper = mount(PagefindSearch, {
       props: {
         pagefind: mockPagefind,
-        showSearch: false,
+        showKeywordInput: false,
       },
       global: {
         stubs: {
@@ -39,11 +39,11 @@ describe('PagefindSearch show search parameter', () => {
 
     mockPagefind.search.mockClear()
 
-    //check that the search field is shown when showSearch is true
+    //check that the search field is shown when showKeywordInput is true
     const wrapperDefault = mount(PagefindSearch, {
       props: {
         pagefind: mockPagefind,
-        showSearch: true,
+        showKeywordInput: true,
       },
       global: {
         stubs: {

@@ -203,12 +203,12 @@ const alphabeticalSortOrder = {title: "desc"}
 
 ## Hiding the Search Bar
 
-If you want to hide the text search bar, you can pass a `showSearch` parameter with the value `false` to the Search component
+If you want to hide the keyword search bar, you can pass a `showKeywordInput` parameter with the value `false` to the Search component
 
 ```vue
 <Search
   ...
-  :=":showSearch="false"">
+  :=":showKeyworkInput="false"">
   ...
 </Search>
 ```
