@@ -70,10 +70,10 @@ const clearFilter = () => {
 <style scoped>
 .filter-input {
   width: 100%;
-  padding: var(--pv-input-padding);
-  border: var(--pv-input-border);
-  border-radius: var(--pv-input-border-radius);
-  font-size: var(--pv-input-font-size);
+  padding: var(--pagefind-vue-input-padding);
+  border: var(--pagefind-vue-input-border);
+  border-radius: var(--pagefind-vue-input-border-radius);
+  font-size: var(--pagefind-vue-input-font-size);
   box-sizing: border-box;
   margin-bottom: 2px;
   padding-right: 30px; /* Make room for the clear button */
@@ -103,11 +103,11 @@ const clearFilter = () => {
 }
 
 .checkbox-container {
-  max-height: var(--pv-options-max-height);
+  max-height: var(--pagefind-vue-options-max-height);
   overflow-y: auto;
   overflow-x: hidden;
-  border: var(--pv-input-border);
-  border-radius: var(--pv-input-border-radius);
+  border: var(--pagefind-vue-input-border);
+  border-radius: var(--pagefind-vue-input-border-radius);
   padding: 6px;
   /* Add scrollbar styling */
   scrollbar-width: thin; /* Firefox */

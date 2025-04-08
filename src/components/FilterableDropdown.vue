@@ -314,40 +314,40 @@ onMounted(() => {
 
 .filterable-dropdown-input {
   width: 100%;
-  padding: var(--pv-input-padding);
+  padding: var(--pagefind-vue-input-padding);
   padding-right: 4rem;
   box-sizing: border-box;
-  border: var(--pv-input-border);
-  border-radius: var(--pv-input-border-radius);
-  font-size: var(--pv-font-size);
-  color: var(--pv-input-color);
-  background: var(--pv-input-bg);
+  border: var(--pagefind-vue-input-border);
+  border-radius: var(--pagefind-vue-input-border-radius);
+  font-size: var(--pagefind-vue-font-size);
+  color: var(--pagefind-vue-input-color);
+  background: var(--pagefind-vue-input-bg);
 }
 
 .filterable-dropdown-options {
   position: absolute;
   width: 100%;
-  max-height: var(--pv-options-max-height);
+  max-height: var(--pagefind-vue-options-max-height);
   overflow-y: auto;
-  z-index: var(--pv-options-z-index);
-  background: var(--pv-options-bg);
-  border: var(--pv-options-border);
+  z-index: var(--pagefind-vue-options-z-index);
+  background: var(--pagefind-vue-options-bg);
+  border: var(--pagefind-vue-options-border);
   border-top: none;
   margin: 0;
   padding: 0;
   list-style: none;
-  box-shadow: var(--pv-options-shadow);
+  box-shadow: var(--pagefind-vue-options-shadow);
 }
 
 .filterable-dropdown-option {
   width: 100%;
-  text-align: var(--pv-option-text-align);
-  padding: var(--pv-option-padding);
+  text-align: var(--pagefind-vue-option-text-align);
+  padding: var(--pagefind-vue-option-padding);
   border: none;
   background: none; /* has same effect as setting bg on the container */
   cursor: pointer;
-  color: var(--pv-option-color);
-  font-size: var(--pv-option-font-size);
+  color: var(--pagefind-vue-option-color);
+  font-size: var(--pagefind-vue-option-font-size);
   /* Reset button styles because these should appear like <select> options */
   margin: 0;
   font-family: inherit;
@@ -363,24 +363,24 @@ onMounted(() => {
 
 .filterable-dropdown-option:hover,
 .filterable-dropdown-option:focus {
-  background-color: var(--pv-option-hover-bg);
+  background-color: var(--pagefind-vue-option-hover-bg);
 }
 
 .filterable-dropdown-option[aria-selected='true'] {
-  background-color: var(--pv-option-selected-bg);
+  background-color: var(--pagefind-vue-option-selected-bg);
 }
 
 .filterable-dropdown-option[disabled],
 .filterable-dropdown-option[disabled]:hover {
   opacity: 0.5;
   cursor: default;
-  background-color: var(--pv-option-disabled-bg);
+  background-color: var(--pagefind-vue-option-disabled-bg);
 }
 
 .filterable-dropdown-no-results {
-  padding: var(--pv-option-padding);
-  color: var(--pv-option-color);
-  font-style: var(--pv-no-results-font-style);
+  padding: var(--pagefind-vue-option-padding);
+  color: var(--pagefind-vue-option-color);
+  font-style: var(--pagefind-vue-no-results-font-style);
 }
 
 .input-wrapper {

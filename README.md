@@ -16,31 +16,31 @@ These are the CSS variables available to be overidden and their default values:
 ```css
 :root {
   /* visible text input */
-  --pv-input-border: 1px solid #ccc;
-  --pv-input-border-radius: 0.25rem;
-  --pv-input-font-size: 1rem;
-  --pv-input-color: black;
-  --pv-input-bg: white;
-  --pv-input-padding: 0.5rem;
+  --pagefind-vue-input-border: 1px solid #ccc;
+  --pagefind-vue-input-border-radius: 0.25rem;
+  --pagefind-vue-input-font-size: 1rem;
+  --pagefind-vue-input-color: black;
+  --pagefind-vue-input-bg: white;
+  --pagefind-vue-input-padding: 0.5rem;
 
   /* dropdown container */
-  --pv-options-max-height: 200px;
-  --pv-options-z-index: 1000;
-  --pv-options-bg: white;
-  --pv-options-border: 1px solid #ccc;
-  --pv-options-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  --pagefind-vue-options-max-height: 200px;
+  --pagefind-vue-options-z-index: 1000;
+  --pagefind-vue-options-bg: white;
+  --pagefind-vue-options-border: 1px solid #ccc;
+  --pagefind-vue-options-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 
   /* individual option */
-  --pv-option-text-align: left;
-  --pv-option-padding: 0.4rem;
-  --pv-option-color: black;
-  --pv-option-font-size: 1rem;
-  --pv-option-hover-bg: #b6b6b6;
-  --pv-option-selected-bg: #c1ffbe;
-  --pv-option-disabled-bg: #f5f5f5;
+  --pagefind-vue-option-text-align: left;
+  --pagefind-vue-option-padding: 0.4rem;
+  --pagefind-vue-option-color: black;
+  --pagefind-vue-option-font-size: 1rem;
+  --pagefind-vue-option-hover-bg: #b6b6b6;
+  --pagefind-vue-option-selected-bg: #c1ffbe;
+  --pagefind-vue-option-disabled-bg: #f5f5f5;
 
   /* text displayed when no results match input */
-  --pv-no-results-font-style: italic;
+  --pagefind-vue-no-results-font-style: italic;
 }
 ```
 
@@ -48,14 +48,14 @@ These are the CSS variables available to be overidden and their default values:
 
 ```CSS
 :root {
-  --pv-checkbox-option-margin: 0.5rem 0;
+  --pagefind-vue-checkbox-option-margin: 0.5rem 0;
 
-  --pv-checkbox-label-padding: 0.1rem 1.5rem;
-  --pv-checkbox-label-font-size: 1rem;
-  --pv-checkbox-text-color: black;
+  --pagefind-vue-checkbox-label-padding: 0.1rem 1.5rem;
+  --pagefind-vue-checkbox-label-font-size: 1rem;
+  --pagefind-vue-checkbox-text-color: black;
 
-  --pv-checkbox-input-size: 1rem;
-  --pv-checkbox-accent: rgb(55, 0, 255);
+  --pagefind-vue-checkbox-input-size: 1rem;
+  --pagefind-vue-checkbox-accent: rgb(55, 0, 255);
 }
 ```
 
