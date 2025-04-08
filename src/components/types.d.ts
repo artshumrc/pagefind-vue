@@ -35,6 +35,7 @@ export interface CustomSortFunctions {
 
 export interface ResultData {
   url: string
+  raw_url: string
   excerpt: string
   meta: {
     title: string
