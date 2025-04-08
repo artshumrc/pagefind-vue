@@ -10,6 +10,7 @@
     :default-sort-function="customDefaultSort"
     :exclude-filter-options="excludOptions"
     :filter-group-sort-function="sortFilterGroupsByList"
+    :filters-definition="filtersDefinition"
   >
   </Search>
 </template>
@@ -20,6 +21,7 @@ import Search from './components/PagefindSearch.vue'
 import type {
   FilterSortFunction as FilterOptionsSortFunction,
   CustomSortFunctions,
+  FiltersDefinition,
   Filter,
 } from './components/types'
 
@@ -42,6 +44,24 @@ onMounted(async () => {
     console.error('Failed to initialize pagefind:', error)
   }
 })
+
+// Define filters configuration
+const filtersDefinition: FiltersDefinition = {
+  'Crystal system': {
+    type: 'checkboxes',
+    label: 'Crystal System',
+  },
+  Abundance: 'checkboxes',
+  Distribution: 'checkboxes',
+  'Status at Tsumeb': {
+    type: 'checkboxes',
+    label: 'Status at Tsumeb',
+  },
+  Occurence: {
+    type: 'dropdown',
+    label: 'Paragenesis',
+  },
+}
 
 const abundanceSortList = ['Very rare', 'Extremely rare', 'Very common', 'Common']
 const excludOptions = {
@@ -79,7 +99,7 @@ function sortByList(list: string[]): FilterOptionsSortFunction {
   }
 }
 
-const sortedFilterList = ['Crystal system', 'Abundance', 'Status at Tsumeb', 'Occurence']
+const sortedFilterList = ['Occurence', 'Crystal system', 'Abundance', 'Status at Tsumeb']
 function sortFilterGroupsByList(a: string, b: string, filters: Filter): number {
   // Check if either value is in the priority list
   const indexA = sortedFilterList.indexOf(a)
@@ -111,7 +131,7 @@ const customSortFunctions: CustomSortFunctions = {
 
 function customDefaultSort(a: [string, number], b: [string, number]): number {
   // Sort by facet count ascending (internal default is descending)
-  return a[1] - b[1]
+  return b[1] - a[1]
 }
 </script>
 
