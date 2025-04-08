@@ -4,18 +4,15 @@ export interface Option {
   count: number
 }
 
-export interface ResultData {
-  meta: {
-    title: string
-    image?: string
-    image_alt?: string
-  }
-  raw_url: string
-  excerpt: string
+export interface FilterDefinitionObject {
+  type: string // Widget type: 'checkboxes', 'dropdown', etc.
+  label?: string // Optional custom label for the filter group
+  // Could be extended with additional properties as needed
 }
 
-export interface FiltersDefinition {
-  [key: string]: 'checkboxes' | 'filterableDropdown'
+// FiltersDefinition can accept either a string (legacy) or object (new approach)
+export type FiltersDefinition = {
+  [key: string]: string | FilterDefinitionObject
 }
 
 export interface Filter {
@@ -36,6 +33,17 @@ export interface CustomSortFunctions {
   [key: string]: FilterSortFunction
 }
 
+export interface ResultData {
+  url: string
+  raw_url: string
+  excerpt: string
+  meta: {
+    title: string
+    [key: string]: any
+  }
+  filters?: Record<string, string[]>
+}
+
 export type SortOption = {
-  [key: string]: 'asc' | 'desc';
-};
+  [key: string]: 'asc' | 'desc'
+}

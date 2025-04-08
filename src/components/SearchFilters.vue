@@ -8,13 +8,13 @@
           Object.values(filteredFilters[groupName]).some((value) => value > 0)
         "
       >
-        <h3>{{ groupName }}</h3>
+        <h3>{{ getFilterGroupLabel(groupName) }}</h3>
         <FilterComponent
           :name="groupName"
           :options="filteredKeywordFilters[groupName]"
           :selected-filters="selectedFilters"
-          :checkbox-to-dropdown-breakpoint="checkboxToDropdownBreakpoint"
-          :filter-type="filtersDefinition?.[groupName]"
+          :filter-type="getFilterType(groupName)"
+          :checkbox-filter-threshold="checkboxFilterThreshold"
           @update:filters="handleSingleSelect"
         />
       </template>
@@ -27,11 +27,11 @@ import { ref, onMounted } from 'vue'
 import FilterComponent from './FilterComponent.vue'
 import type { FiltersDefinition } from './types'
 
-defineProps<{
+const props = defineProps<{
   filteredFilters: Record<string, { [key: string]: number }>
   filteredKeywordFilters: { [key: string]: { [key: string]: number } }
   selectedFilters: { [key: string]: string[] }
-  checkboxToDropdownBreakpoint: number
+  checkboxFilterThreshold: number
   multiSelectFilters?: string[]
   filtersDefinition?: FiltersDefinition
   sortedGroups?: string[]
@@ -47,6 +47,34 @@ onMounted(() => {
 
 const handleSingleSelect = (group: string, value: string | string[]) => {
   emit('update:filters', group, value)
+}
+
+// Get the proper widget type from filtersDefinition
+const getFilterType = (groupName: string): string | undefined => {
+  if (!props.filtersDefinition) return undefined
+
+  const filterDef = props.filtersDefinition[groupName]
+
+  if (typeof filterDef === 'string') {
+    return filterDef // Legacy string type
+  } else if (filterDef && typeof filterDef === 'object') {
+    return filterDef.type // New object type with widget specification
+  }
+
+  return undefined
+}
+
+// Get filter group label (if customized)
+const getFilterGroupLabel = (groupName: string): string => {
+  if (!props.filtersDefinition) return groupName
+
+  const filterDef = props.filtersDefinition[groupName]
+
+  if (filterDef && typeof filterDef === 'object' && filterDef.label) {
+    return filterDef.label // Use custom label if provided
+  }
+
+  return groupName // Default to the group name
 }
 </script>
 

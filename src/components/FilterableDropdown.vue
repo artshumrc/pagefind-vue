@@ -307,31 +307,6 @@ onMounted(() => {
 })
 </script>
 
-<style>
-/* Global CSS variables that can be easily overridden */
-:root {
-  --pagefind-vue-fd-input-border: 1px solid #ccc;
-  --pagefind-vue-fd-input-border-radius: 0.25rem;
-  --pagefind-vue-fd-input-font-size: 1rem;
-  --pagefind-vue-fd-input-color: black;
-  --pagefind-vue-fd-input-bg: white;
-  --pagefind-vue-fd-input-padding: 0.5rem;
-  --pagefind-vue-fd-options-max-height: 200px;
-  --pagefind-vue-fd-options-z-index: 1000;
-  --pagefind-vue-fd-options-bg: white;
-  --pagefind-vue-fd-options-border: 1px solid #ccc;
-  --pagefind-vue-fd-options-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-  --pagefind-vue-fd-option-text-align: left;
-  --pagefind-vue-fd-option-padding: 0.4rem;
-  --pagefind-vue-fd-option-color: black;
-  --pagefind-vue-fd-option-font-size: 1rem;
-  --pagefind-vue-fd-option-hover-bg: #b6b6b6;
-  --pagefind-vue-fd-option-selected-bg: #c1ffbe;
-  --pagefind-vue-fd-option-disabled-bg: #f5f5f5;
-  --pagefind-vue-fd-no-results-font-style: italic;
-}
-</style>
-
 <style scoped>
 .filterable-dropdown-container {
   position: relative;
@@ -339,40 +314,40 @@ onMounted(() => {
 
 .filterable-dropdown-input {
   width: 100%;
-  padding: var(--pagefind-vue-fd-input-padding);
+  padding: var(--pagefind-vue-input-padding);
   padding-right: 4rem;
   box-sizing: border-box;
-  border: var(--pagefind-vue-fd-input-border);
-  border-radius: var(--pagefind-vue-fd-input-border-radius);
-  font-size: var(--pagefind-vue-fd-font-size);
-  color: var(--pagefind-vue-fd-input-color);
-  background: var(--pagefind-vue-fd-input-bg);
+  border: var(--pagefind-vue-input-border);
+  border-radius: var(--pagefind-vue-input-border-radius);
+  font-size: var(--pagefind-vue-font-size);
+  color: var(--pagefind-vue-input-color);
+  background: var(--pagefind-vue-input-bg);
 }
 
 .filterable-dropdown-options {
   position: absolute;
   width: 100%;
-  max-height: var(--pagefind-vue-fd-options-max-height);
+  max-height: var(--pagefind-vue-options-max-height);
   overflow-y: auto;
-  z-index: var(--pagefind-vue-fd-options-z-index);
-  background: var(--pagefind-vue-fd-options-bg);
-  border: var(--pagefind-vue-fd-options-border);
+  z-index: var(--pagefind-vue-options-z-index);
+  background: var(--pagefind-vue-options-bg);
+  border: var(--pagefind-vue-options-border);
   border-top: none;
   margin: 0;
   padding: 0;
   list-style: none;
-  box-shadow: var(--pagefind-vue-fd-options-shadow);
+  box-shadow: var(--pagefind-vue-options-shadow);
 }
 
 .filterable-dropdown-option {
   width: 100%;
-  text-align: var(--pagefind-vue-fd-option-text-align);
-  padding: var(--pagefind-vue-fd-option-padding);
+  text-align: var(--pagefind-vue-option-text-align);
+  padding: var(--pagefind-vue-option-padding);
   border: none;
   background: none; /* has same effect as setting bg on the container */
   cursor: pointer;
-  color: var(--pagefind-vue-fd-option-color);
-  font-size: var(--pagefind-vue-fd-option-font-size);
+  color: var(--pagefind-vue-option-color);
+  font-size: var(--pagefind-vue-option-font-size);
   /* Reset button styles because these should appear like <select> options */
   margin: 0;
   font-family: inherit;
@@ -388,24 +363,24 @@ onMounted(() => {
 
 .filterable-dropdown-option:hover,
 .filterable-dropdown-option:focus {
-  background-color: var(--pagefind-vue-fd-option-hover-bg);
+  background-color: var(--pagefind-vue-option-hover-bg);
 }
 
 .filterable-dropdown-option[aria-selected='true'] {
-  background-color: var(--pagefind-vue-fd-option-selected-bg);
+  background-color: var(--pagefind-vue-option-selected-bg);
 }
 
 .filterable-dropdown-option[disabled],
 .filterable-dropdown-option[disabled]:hover {
   opacity: 0.5;
   cursor: default;
-  background-color: var(--pagefind-vue-fd-option-disabled-bg);
+  background-color: var(--pagefind-vue-option-disabled-bg);
 }
 
 .filterable-dropdown-no-results {
-  padding: var(--pagefind-vue-fd-option-padding);
-  color: var(--pagefind-vue-fd-option-color);
-  font-style: var(--pagefind-vue-fd-no-results-font-style);
+  padding: var(--pagefind-vue-option-padding);
+  color: var(--pagefind-vue-option-color);
+  font-style: var(--pagefind-vue-no-results-font-style);
 }
 
 .input-wrapper {

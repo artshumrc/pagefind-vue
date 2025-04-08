@@ -1,7 +1,11 @@
 <!-- This is named "PagefindSearch" because it Vue convention to not have single-word components. It is exported and consumed as `Search`, however. -->
 <template>
   <div class="search-container">
-    <section v-if="showKeywordInput" class="border-bottom fade-section" :class="{ visible: mounted }">
+    <section
+      v-if="showKeywordInput"
+      class="border-bottom fade-section"
+      :class="{ visible: mounted }"
+    >
       <form class="search-form" @submit.prevent="performSearch(searchQuery)">
         <div class="input-wrapper">
           <label for="search" class="visually-hidden">Search</label>
@@ -22,13 +26,13 @@
     <div class="content-layout">
       <Filters
         v-if="mounted && Object.keys(filteredFilters).length > 0"
-        :checkbox-to-dropdown-breakpoint="checkboxToDropdownBreakpoint || 5"
         :filtered-filters="filteredFilters"
         :filtered-keyword-filters="filteredKeywordFilters"
         :selected-filters="selectedFilters"
         :sorted-groups="sortedFilterGroups"
         :filters-definition="filtersDefinition"
         :custom-sort-functions="customSortFunctions"
+        :checkbox-filter-threshold="checkboxFilterThreshold"
         @update:filters="handleFilterUpdate"
       />
 
@@ -56,23 +60,28 @@ import Filters from './SearchFilters.vue'
 import Results from './SearchResults.vue'
 import type { FiltersDefinition, Filter, ResultData, SortOption } from './types'
 
-const props = withDefaults(defineProps<{
-  pagefind: any;
-  itemsPerPage?: number;
-  filtersDefinition?: FiltersDefinition;
-  tabbedFilter?: string;
-  defaultTab?: string;
-  excludeFilters?: string[];
-  excludeFilterOptions?: Record<string, string[]>;
-  checkboxToDropdownBreakpoint?: number;
-  customSortFunctions?: Record<string, (a: any, b: any) => number>;
-  defaultSortFunction?: (a: [string, number], b: [string, number]) => number;
-  filterGroupSortFunction?: (a: string, b: string, filters: Filter) => number;
-  resultSort?: SortOption;
-  showKeywordInput?: boolean;
-}>(), {
-  showKeywordInput: true,
-});
+const props = withDefaults(
+  defineProps<{
+    pagefind: any
+    itemsPerPage?: number
+    filtersDefinition?: FiltersDefinition
+    tabbedFilter?: string
+    defaultTab?: string
+    excludeFilters?: string[]
+    excludeFilterOptions?: Record<string, string[]>
+    customSortFunctions?: Record<string, (a: any, b: any) => number>
+    filterGroupSortFunction?: (a: string, b: string, filters: Filter) => number
+    defaultSortFunction?: (a: [string, number], b: [string, number]) => number
+    resultSort?: SortOption
+    showKeywordInput?: boolean
+    checkboxFilterThreshold?: number
+  }>(),
+  {
+    showKeywordInput: true,
+    itemsPerPage: 10,
+    checkboxFilterThreshold: 8,
+  },
+)
 
 const searchQuery = ref('')
 const results = ref<any[]>([]) // raw search results
@@ -243,15 +252,23 @@ const filteredKeywordFilters = computed(() => {
 const sortedFilterGroups = computed(() => {
   if (!filters.value) return []
 
+  // If filtersDefinition is provided, use its order
+  if (props.filtersDefinition) {
+    // Get the keys from filtersDefinition that are also in filteredFilters
+    return Object.keys(props.filtersDefinition).filter((key) =>
+      filteredFilters.value.hasOwnProperty(key),
+    )
+  }
+
+  // If filterGroupSortFunction is provided, use it
   if (props.filterGroupSortFunction) {
     return Object.keys(filteredFilters.value).sort((a, b) =>
       props.filterGroupSortFunction!(a, b, filters.value),
     )
   }
 
-  return Object.keys(filteredFilters.value).sort(
-    (a, b) => Object.keys(filters.value[b]).length - Object.keys(filters.value[a]).length,
-  )
+  // Fall back to alphabetical order
+  return Object.keys(filteredFilters.value).sort((a, b) => a.localeCompare(b))
 })
 
 watch(searchQuery, async (newQuery) => {
@@ -488,6 +505,31 @@ function calculateTabCounts(filtersMinusTab: Filter = {}) {
   )
 }
 </script>
+
+<style>
+/* Global CSS variables that can be easily overridden */
+:root {
+  --pagefind-vue-input-border: 1px solid #ccc;
+  --pagefind-vue-input-border-radius: 0.25rem;
+  --pagefind-vue-input-font-size: 1rem;
+  --pagefind-vue-input-color: black;
+  --pagefind-vue-input-bg: white;
+  --pagefind-vue-input-padding: 0.5rem;
+  --pagefind-vue-options-max-height: 200px;
+  --pagefind-vue-options-z-index: 1000;
+  --pagefind-vue-options-bg: white;
+  --pagefind-vue-options-border: 1px solid #ccc;
+  --pagefind-vue-options-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  --pagefind-vue-option-text-align: left;
+  --pagefind-vue-option-padding: 0.4rem;
+  --pagefind-vue-option-color: black;
+  --pagefind-vue-option-font-size: 1rem;
+  --pagefind-vue-option-hover-bg: #b6b6b6;
+  --pagefind-vue-option-selected-bg: #c1ffbe;
+  --pagefind-vue-option-disabled-bg: #f5f5f5;
+  --pagefind-vue-no-results-font-style: italic;
+}
+</style>
 
 <style scoped>
 /* TODO: check if all these are still needed here */

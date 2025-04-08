@@ -1,18 +1,14 @@
 <template>
-  <template
-    v-if="
-      filterType === 'checkboxes' ||
-      (!filterType && Object.keys(options).length < checkboxToDropdownBreakpoint)
-    "
-  >
+  <template v-if="filterType === 'checkboxes'">
     <CheckboxGroup
       :name="name"
       :options="options"
       :selected-filters="selectedFilters"
+      :checkbox-filter-threshold="checkboxFilterThreshold"
       @update:filters="handleCheckboxUpdate"
     />
   </template>
-  <template v-else>
+  <template v-else-if="filterType === 'dropdown' || !filterType">
     <FilterableDropdown
       :name="name"
       :model-value="selectedFilters[name]?.[0] || ''"
@@ -36,7 +32,7 @@ defineProps<{
   name: string
   options: { [key: string]: number }
   selectedFilters: { [key: string]: string[] }
-  checkboxToDropdownBreakpoint: number
+  checkboxFilterThreshold: number
   filterType?: string
 }>()
 
