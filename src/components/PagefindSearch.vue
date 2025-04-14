@@ -94,6 +94,8 @@ const currentPage = ref(1)
 const totalResults = ref(0)
 const activeTab = ref('')
 const selectedFilters = ref<{ [key: string]: string[] }>({})
+// Store per-tab filters
+const tabFilters = ref<{ [tabValue: string]: { [key: string]: string[] } }>({})
 const showKeywordInput = props.showKeywordInput
 
 const validFilterKeys = computed(() => {
@@ -282,10 +284,25 @@ watch(searchQuery, async (newQuery) => {
 
 watch(
   () => activeTab.value,
-  async (newValue) => {
+  async (newValue, oldValue) => {
     if (newValue) {
       if (props.tabbedFilter) {
-        selectedFilters.value[props.tabbedFilter] = [newValue]
+        // save current filters for previous tab (except tabbedFilter itself)
+        if (oldValue) {
+          const filtersToSave: { [key: string]: string[] } = {}
+          Object.entries(selectedFilters.value).forEach(([k, v]) => {
+            if (k !== props.tabbedFilter) filtersToSave[k] = [...v]
+          })
+          tabFilters.value[oldValue] = filtersToSave
+        }
+        // set tab filter
+        selectedFilters.value = { [props.tabbedFilter]: [newValue] }
+        // sestore filters for this tab if present
+        if (tabFilters.value[newValue]) {
+          Object.entries(tabFilters.value[newValue]).forEach(([k, v]) => {
+            selectedFilters.value[k] = [...v]
+          })
+        }
       }
       updateUrlParams(currentPage.value)
       await performSearch(searchQuery.value)
@@ -362,6 +379,7 @@ const clearSearch = async () => {
   currentPage.value = 1
   pageResults.value = []
   results.value = []
+  tabFilters.value = {}
 
   // Clear URL parameters
   const url = new URL(window.location.href)
@@ -388,6 +406,12 @@ const clearSearch = async () => {
  * When any filter is updated, this function is called.
  */
 const handleFilterUpdate = (group: string, value: string) => {
+  // If using tabs, only allow filters for the current tab
+  if (props.tabbedFilter && group === props.tabbedFilter) {
+    selectedFilters.value[group] = [value]
+    return
+  }
+
   // Initialize the group if it doesn't exist
   if (!selectedFilters.value[group]) {
     selectedFilters.value[group] = []
