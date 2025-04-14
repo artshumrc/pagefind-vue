@@ -64,6 +64,7 @@ const filtersDefinition: FiltersDefinition = {
 }
 
 const abundanceSortList = ['Very rare', 'Extremely rare', 'Very common', 'Common']
+const sortedTabList = ['Species', 'Specimen', 'Pseudomorph']
 const excludOptions = {
   Abundance: ['N/A'],
 }
@@ -127,6 +128,7 @@ function sortFilterGroupsByList(a: string, b: string, filters: Filter): number {
 // Define customSortFunctions with the correct type
 const customSortFunctions: CustomSortFunctions = {
   Abundance: sortByList(abundanceSortList),
+  Classification: sortByList(sortedTabList),
 }
 
 function customDefaultSort(a: [string, number], b: [string, number]): number {

@@ -514,12 +514,28 @@ function getSearchFilters() {
 }
 
 function sortTabs(tabs: { label: string; value: string; count: number }[], defaultTab?: string) {
-  if (!defaultTab) return tabs.sort((a, b) => b.count - a.count)
+  // Check if we have a custom sort function for tabs
+  if (
+    props.customSortFunctions &&
+    props.tabbedFilter &&
+    props.customSortFunctions[props.tabbedFilter]
+  ) {
+    // Use the customSortFunction for the tabs
+    return tabs.sort((a, b) => {
+      // Convert to format expected by customSortFunctions (key-value pair)
+      return props.customSortFunctions![props.tabbedFilter!]([a.value, a.count], [b.value, b.count])
+    })
+  }
 
-  return [
-    ...tabs.filter((tab) => tab.value === defaultTab),
-    ...tabs.filter((tab) => tab.value !== defaultTab).sort((a, b) => b.count - a.count),
-  ]
+  if (defaultTab) {
+    return [
+      ...tabs.filter((tab) => tab.value === defaultTab),
+      ...tabs.filter((tab) => tab.value !== defaultTab).sort((a, b) => b.count - a.count),
+    ]
+  }
+
+  // Default behavior: sort by count descending
+  return tabs.sort((a, b) => b.count - a.count)
 }
 
 function calculateTabCounts(filtersMinusTab: Filter = {}) {
