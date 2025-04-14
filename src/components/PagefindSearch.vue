@@ -345,6 +345,11 @@ const updateUrlParams = (page: number) => {
 }
 
 async function updateCurrentPageResults() {
+  if (!results.value) {
+    pageResults.value = []
+    return
+  }
+
   const start = (currentPage.value - 1) * itemsPerPage
   const end = start + itemsPerPage
 

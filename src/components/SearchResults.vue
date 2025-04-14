@@ -40,17 +40,26 @@ interface SearchResult {
   data: () => Promise<ResultData | null>
 }
 
-const props = defineProps<{
-  pageResults: (ResultData | null)[]
-  results: SearchResult[]
-  itemsPerPage: number
-  currentPage: number
-  totalResults?: number
-}>()
+const props = defineProps({
+  results: {
+    type: Array as () => SearchResult[],
+    default: () => [], // Provide a default empty array
+  },
+  pageResults: {
+    type: Array as () => (ResultData | null)[],
+    default: () => [],
+  },
+  itemsPerPage: {
+    type: Number,
+    default: 10,
+  },
+  currentPage: Number,
+  totalResults: Number,
+})
 
 const emit = defineEmits(['update-url-params', 'perform-search'])
 
-const componentCurrentPage = ref(props.currentPage)
+const componentCurrentPage = ref<number>(props.currentPage || 1)
 const componentPageResults = ref<(ResultData | null)[]>(props.pageResults)
 
 // Computed property for total results count
@@ -91,7 +100,7 @@ watch(
 watch(
   () => props.currentPage,
   (newPage) => {
-    componentCurrentPage.value = newPage
+    if (newPage) componentCurrentPage.value = newPage
     updateCurrentPageResults()
   },
   { immediate: true, flush: 'sync' },
