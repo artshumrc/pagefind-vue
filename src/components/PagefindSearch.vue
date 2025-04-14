@@ -373,10 +373,19 @@ const updateFiltersAndResults = async (searchResults: any) => {
 const clearSearch = async () => {
   // Reset all state first
   searchQuery.value = ''
+
+  // Save the current tab value before clearing filters
+  const currentTab = activeTab.value
+
   selectedFilters.value = {}
-  if (props.defaultTab) {
-    activeTab.value = props.defaultTab
+
+  // Restore the tab filter if we have a tabbed filter
+  if (props.tabbedFilter && currentTab) {
+    selectedFilters.value[props.tabbedFilter] = [currentTab]
+    // Keep the active tab unchanged
+    activeTab.value = currentTab
   }
+
   currentPage.value = 1
   pageResults.value = []
   results.value = []
