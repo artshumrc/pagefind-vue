@@ -13,7 +13,7 @@
         @click="handleTabClick(tab.value)"
         @keydown="handleTabKeydown"
       >
-        {{ tab.label }} ({{ tab.count }})
+        {{ tab.label }}
       </button>
     </div>
   </div>

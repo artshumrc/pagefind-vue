@@ -42,6 +42,7 @@
         :results="results"
         :items-per-page="itemsPerPage"
         :current-page="currentPage"
+        :total-results="totalResults"
         @update-url-params="updateUrlParams"
         @perform-search="performSearch"
       >
