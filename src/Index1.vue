@@ -61,6 +61,7 @@ const filtersDefinition: FiltersDefinition = {
     type: 'dropdown',
     label: 'Paragenesis',
   },
+  'Precursor Mineral': 'dropdown',
 }
 
 const abundanceSortList = ['Very rare', 'Extremely rare', 'Very common', 'Common']
