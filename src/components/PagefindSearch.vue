@@ -121,16 +121,20 @@ onMounted(async () => {
         selectedFilters.value[param] = []
       }
       selectedFilters.value[param].push(value)
+
+      if (props.tabbedFilter && param === props.tabbedFilter) {
+        activeTab.value = value
+      }
     }
+  }
+
+  if (props.tabbedFilter && !activeTab.value) {
+    activeTab.value = props.defaultTab || ''
   }
 
   if (pageParam) {
     const page = parseInt(pageParam)
     currentPage.value = page > 0 ? page : 1
-  }
-
-  if (props.tabbedFilter && !activeTab.value) {
-    activeTab.value = props.defaultTab || ''
   }
 
   // Get text search query from URL
@@ -532,7 +536,6 @@ function calculateTabCounts(filtersMinusTab: Filter = {}) {
 </style>
 
 <style scoped>
-/* TODO: check if all these are still needed here */
 .visually-hidden {
   clip: rect(0 0 0 0);
   clip-path: inset(50%);
