@@ -1,6 +1,10 @@
 <template>
-  <section class="border-bottom fade-section results-section" :class="{ 'visible': true }" role="tabpanel">
-    <h2 class="visually-hidden">Results</h2>
+  <section
+    class="border-bottom fade-section results-section"
+    :class="{ visible: true }"
+    role="tabpanel"
+  >
+    <h2>{{ totalResultsCount }} Result<span v-if="totalResultsCount !== 1">s</span></h2>
     <ul id="results-list">
       <li v-for="result in componentPageResults" :key="result?.raw_url">
         <template v-if="result">
@@ -18,79 +22,106 @@
         </template>
       </li>
     </ul>
-    <Pagination :current-page="componentCurrentPage" :total-items="props.results.length"
-      :items-per-page="props.itemsPerPage" @page-change="handlePageChange" />
+    <Pagination
+      :current-page="componentCurrentPage"
+      :total-items="props.results.length"
+      :items-per-page="props.itemsPerPage"
+      @page-change="handlePageChange"
+    />
   </section>
 </template>
 
 <script setup lang="ts">
-import { ref, watch, onMounted } from 'vue';
-import Pagination from './Pagination.vue';
-import type { ResultData } from './types';
+import { ref, watch, onMounted, computed } from 'vue'
+import Pagination from './Pagination.vue'
+import type { ResultData } from './types'
 
 interface SearchResult {
-  data: () => Promise<ResultData | null>;
+  data: () => Promise<ResultData | null>
 }
 
-const props = defineProps<{
-  pageResults: (ResultData | null)[];
-  results: SearchResult[];
-  itemsPerPage: number;
-  currentPage: number;
-}>();
+const props = defineProps({
+  results: {
+    type: Array as () => SearchResult[],
+    default: () => [], // Provide a default empty array
+  },
+  pageResults: {
+    type: Array as () => (ResultData | null)[],
+    default: () => [],
+  },
+  itemsPerPage: {
+    type: Number,
+    default: 10,
+  },
+  currentPage: Number,
+  totalResults: Number,
+})
 
-const emit = defineEmits(['update-url-params', 'perform-search']);
+const emit = defineEmits(['update-url-params', 'perform-search'])
 
-const componentCurrentPage = ref(props.currentPage);
-const componentPageResults = ref<(ResultData | null)[]>(props.pageResults);
+const componentCurrentPage = ref<number>(props.currentPage || 1)
+const componentPageResults = ref<(ResultData | null)[]>(props.pageResults)
+
+// Computed property for total results count
+const totalResultsCount = computed(() => {
+  return props.totalResults !== undefined && props.totalResults !== null
+    ? props.totalResults
+    : props.results.length
+})
 
 onMounted(async () => {
-  await updateCurrentPageResults();
-});
+  await updateCurrentPageResults()
+})
 
 // Add watcher for results length changes
-watch(() => props.results.length, () => {
-  // Reset to page 1 when results change
-  componentCurrentPage.value = 1;
-  emit('update-url-params', 1);
-  updateCurrentPageResults();
-});
+watch(
+  () => props.results.length,
+  () => {
+    // Reset to page 1 when results change
+    componentCurrentPage.value = 1
+    emit('update-url-params', 1)
+    updateCurrentPageResults()
+  },
+)
 
 watch(componentCurrentPage, async () => {
-  await updateCurrentPageResults();
-});
+  await updateCurrentPageResults()
+})
 
 // these watchers are needed to update the state of this component
 // when `currentPage` in `Search.vue` is reset by `clearSearch`.
-watch(() => props.pageResults, (newPageResults) => {
-  componentPageResults.value = newPageResults;
-});
+watch(
+  () => props.pageResults,
+  (newPageResults) => {
+    componentPageResults.value = newPageResults
+  },
+)
 
-watch(() => props.currentPage, (newPage) => {
-  componentCurrentPage.value = newPage;
-  updateCurrentPageResults();
-}, { immediate: true, flush: 'sync' });
+watch(
+  () => props.currentPage,
+  (newPage) => {
+    if (newPage) componentCurrentPage.value = newPage
+    updateCurrentPageResults()
+  },
+  { immediate: true, flush: 'sync' },
+)
 
 const handlePageChange = (page: number) => {
-  componentCurrentPage.value = page;
-  emit('update-url-params', page);
-  updateCurrentPageResults();
-};
-
-async function updateCurrentPageResults() {
-  const start = (componentCurrentPage.value - 1) * props.itemsPerPage;
-  const end = start + props.itemsPerPage;
-
-  // have to await each result to get data, so only await the page results
-  const newPageResults = props.results.slice(start, end);
-  const processed = await Promise.all(
-    newPageResults.map(result => result.data())
-  );
-
-  componentPageResults.value = processed;
+  componentCurrentPage.value = page
+  emit('update-url-params', page)
+  updateCurrentPageResults()
 }
 
+async function updateCurrentPageResults() {
+  const start = (componentCurrentPage.value - 1) * props.itemsPerPage
+  const end = start + props.itemsPerPage
 
+  // have to await each result to get data, so only await the page results
+  const newPageResults = props.results.slice(start, end)
+  const processed = await Promise.all(newPageResults.map((result) => result.data()))
+
+  componentPageResults.value = processed
+}
 </script>
 
 <style scoped>
@@ -134,5 +165,11 @@ button {
 
 :deep(.result-excerpt mark) {
   color: black;
+}
+
+h2 {
+  margin-top: 0;
+  margin-bottom: 0;
+  text-align: center;
 }
 </style>

@@ -42,6 +42,7 @@
         :results="results"
         :items-per-page="itemsPerPage"
         :current-page="currentPage"
+        :total-results="totalResults"
         @update-url-params="updateUrlParams"
         @perform-search="performSearch"
       >
@@ -94,6 +95,8 @@ const currentPage = ref(1)
 const totalResults = ref(0)
 const activeTab = ref('')
 const selectedFilters = ref<{ [key: string]: string[] }>({})
+// Store per-tab filters
+const tabFilters = ref<{ [tabValue: string]: { [key: string]: string[] } }>({})
 const showKeywordInput = props.showKeywordInput
 
 const validFilterKeys = computed(() => {
@@ -121,16 +124,20 @@ onMounted(async () => {
         selectedFilters.value[param] = []
       }
       selectedFilters.value[param].push(value)
+
+      if (props.tabbedFilter && param === props.tabbedFilter) {
+        activeTab.value = value
+      }
     }
+  }
+
+  if (props.tabbedFilter && !activeTab.value) {
+    activeTab.value = props.defaultTab || ''
   }
 
   if (pageParam) {
     const page = parseInt(pageParam)
     currentPage.value = page > 0 ? page : 1
-  }
-
-  if (props.tabbedFilter && !activeTab.value) {
-    activeTab.value = props.defaultTab || ''
   }
 
   // Get text search query from URL
@@ -278,10 +285,25 @@ watch(searchQuery, async (newQuery) => {
 
 watch(
   () => activeTab.value,
-  async (newValue) => {
+  async (newValue, oldValue) => {
     if (newValue) {
       if (props.tabbedFilter) {
-        selectedFilters.value[props.tabbedFilter] = [newValue]
+        // save current filters for previous tab (except tabbedFilter itself)
+        if (oldValue) {
+          const filtersToSave: { [key: string]: string[] } = {}
+          Object.entries(selectedFilters.value).forEach(([k, v]) => {
+            if (k !== props.tabbedFilter) filtersToSave[k] = [...v]
+          })
+          tabFilters.value[oldValue] = filtersToSave
+        }
+        // set tab filter
+        selectedFilters.value = { [props.tabbedFilter]: [newValue] }
+        // sestore filters for this tab if present
+        if (tabFilters.value[newValue]) {
+          Object.entries(tabFilters.value[newValue]).forEach(([k, v]) => {
+            selectedFilters.value[k] = [...v]
+          })
+        }
       }
       updateUrlParams(currentPage.value)
       await performSearch(searchQuery.value)
@@ -323,6 +345,11 @@ const updateUrlParams = (page: number) => {
 }
 
 async function updateCurrentPageResults() {
+  if (!results.value) {
+    pageResults.value = []
+    return
+  }
+
   const start = (currentPage.value - 1) * itemsPerPage
   const end = start + itemsPerPage
 
@@ -351,13 +378,23 @@ const updateFiltersAndResults = async (searchResults: any) => {
 const clearSearch = async () => {
   // Reset all state first
   searchQuery.value = ''
+
+  // Save the current tab value before clearing filters
+  const currentTab = activeTab.value
+
   selectedFilters.value = {}
-  if (props.defaultTab) {
-    activeTab.value = props.defaultTab
+
+  // Restore the tab filter if we have a tabbed filter
+  if (props.tabbedFilter && currentTab) {
+    selectedFilters.value[props.tabbedFilter] = [currentTab]
+    // Keep the active tab unchanged
+    activeTab.value = currentTab
   }
+
   currentPage.value = 1
   pageResults.value = []
   results.value = []
+  tabFilters.value = {}
 
   // Clear URL parameters
   const url = new URL(window.location.href)
@@ -384,6 +421,12 @@ const clearSearch = async () => {
  * When any filter is updated, this function is called.
  */
 const handleFilterUpdate = (group: string, value: string) => {
+  // If using tabs, only allow filters for the current tab
+  if (props.tabbedFilter && group === props.tabbedFilter) {
+    selectedFilters.value[group] = [value]
+    return
+  }
+
   // Initialize the group if it doesn't exist
   if (!selectedFilters.value[group]) {
     selectedFilters.value[group] = []
@@ -485,12 +528,28 @@ function getSearchFilters() {
 }
 
 function sortTabs(tabs: { label: string; value: string; count: number }[], defaultTab?: string) {
-  if (!defaultTab) return tabs.sort((a, b) => b.count - a.count)
+  // Check if we have a custom sort function for tabs
+  if (
+    props.customSortFunctions &&
+    props.tabbedFilter &&
+    props.customSortFunctions[props.tabbedFilter]
+  ) {
+    // Use the customSortFunction for the tabs
+    return tabs.sort((a, b) => {
+      // Convert to format expected by customSortFunctions (key-value pair)
+      return props.customSortFunctions![props.tabbedFilter!]([a.value, a.count], [b.value, b.count])
+    })
+  }
 
-  return [
-    ...tabs.filter((tab) => tab.value === defaultTab),
-    ...tabs.filter((tab) => tab.value !== defaultTab).sort((a, b) => b.count - a.count),
-  ]
+  if (defaultTab) {
+    return [
+      ...tabs.filter((tab) => tab.value === defaultTab),
+      ...tabs.filter((tab) => tab.value !== defaultTab).sort((a, b) => b.count - a.count),
+    ]
+  }
+
+  // Default behavior: sort by count descending
+  return tabs.sort((a, b) => b.count - a.count)
 }
 
 function calculateTabCounts(filtersMinusTab: Filter = {}) {
@@ -532,7 +591,6 @@ function calculateTabCounts(filtersMinusTab: Filter = {}) {
 </style>
 
 <style scoped>
-/* TODO: check if all these are still needed here */
 .visually-hidden {
   clip: rect(0 0 0 0);
   clip-path: inset(50%);
