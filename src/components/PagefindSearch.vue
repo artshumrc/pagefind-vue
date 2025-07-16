@@ -76,11 +76,13 @@ const props = withDefaults(
     resultSort?: SortOption
     showKeywordInput?: boolean
     checkboxFilterThreshold?: number
+    useRelevanceWithKeyword?: boolean
   }>(),
   {
     showKeywordInput: true,
     itemsPerPage: 10,
     checkboxFilterThreshold: 8,
+    useRelevanceWithKeyword: true,
   },
 )
 
@@ -459,13 +461,19 @@ async function performSearch(query: string | null) {
   try {
     const searchFilters = getSearchFilters()
 
+    // override any provided resultSort with relevance (descending) if using keyword search
+    let desiredSort = props.resultSort || { classification: 'asc' }
+    if (props.useRelevanceWithKeyword && query) {
+      desiredSort = { relevance: 'desc' }
+    }
+
     // Sync URL before performing search
     updateUrlParams(currentPage.value)
 
     // Perform main search with all filters
     const searchResults = await props.pagefind
       .search(query || null, {
-        sort: props.resultSort || { classification: 'asc' },
+        sort: desiredSort,
         filters: searchFilters,
       })
       .catch((error: Error) => {
