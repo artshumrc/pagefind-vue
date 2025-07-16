@@ -190,16 +190,27 @@ const excludedOptions = {
 To provide a sort ordering, pass an object whose key(s) are sort names as defined by `data-pagefind-sort` and values are either `asc` or `desc` for ascending or descending sorting order.
 
 ```vue
-<Search
-  ...
-  :=":result-sort="alphabeticalSortOrder"">
+<Search ... :result-sort="alphabeticalSortOrder">
   ...
 </Search>
 
 <script>
-const alphabeticalSortOrder = {title: "desc"}
+const alphabeticalSortOrder = { title: 'desc' }
 </script>
 ```
+
+### Keyword Search and Sorting
+
+By default, results are sorted in descending order of relevance when a keyword search is performed. To disable this and continue sorting by the provided result sorting order.
+
+This can be disabled by passing a value of false in the property `sort-by-relevance-with-keyword` when instantiating a Search component as below.
+
+````vue
+<Search
+  ...
+  :sort-by-relevance-with-keyword=false>
+  ...
+</Search>
 
 ## Hiding the Search Bar
 
@@ -211,7 +222,7 @@ If you want to hide the keyword search bar, you can pass a `showKeywordInput` pa
   :=":showKeywordInput="false"">
   ...
 </Search>
-```
+````
 
 ## Recommended IDE Setup
 
