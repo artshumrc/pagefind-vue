@@ -76,13 +76,13 @@ const props = withDefaults(
     resultSort?: SortOption
     showKeywordInput?: boolean
     checkboxFilterThreshold?: number
-    useRelevanceWithKeyword?: boolean
+    sortByRelevanceWithKeyword?: boolean
   }>(),
   {
     showKeywordInput: true,
     itemsPerPage: 10,
     checkboxFilterThreshold: 8,
-    useRelevanceWithKeyword: true,
+    sortByRelevanceWithKeyword: true,
   },
 )
 
@@ -463,7 +463,7 @@ async function performSearch(query: string | null) {
 
     // override any provided resultSort with relevance (descending) if using keyword search
     let desiredSort = props.resultSort || { classification: 'asc' }
-    if (props.useRelevanceWithKeyword && query) {
+    if (props.sortByRelevanceWithKeyword && query) {
       desiredSort = { relevance: 'desc' }
     }
 
