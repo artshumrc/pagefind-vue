@@ -37,11 +37,9 @@ describe('PagefindSearch result sort parameter', () => {
     await nextTick()
 
     const vm = wrapper.vm as any
-    await vm.performSearch('test query')
+    await vm.performSearch()
 
-    //
     expect(mockPagefind.search).toHaveBeenCalledWith(
-      'test query',
       expect.objectContaining({
         sort: customResultSort,
       }),
@@ -69,11 +67,11 @@ describe('PagefindSearch result sort parameter', () => {
     const vmDefault = wrapperDefault.vm as any
     await vmDefault.performSearch('test query')
 
-    // Search should be called with default sort
+    // Search should be called with relevance sort
     expect(mockPagefind.search).toHaveBeenCalledWith(
       'test query',
       expect.objectContaining({
-        sort: { classification: 'asc' }, // this is currently the default in the component
+        sort: { relevance: 'desc' },
       }),
     )
   })
