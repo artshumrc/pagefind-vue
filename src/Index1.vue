@@ -11,6 +11,8 @@
     :exclude-filter-options="excludOptions"
     :filter-group-sort-function="sortFilterGroupsByList"
     :filters-definition="filtersDefinition"
+    :resultSort="resultSort"
+    @update:searchQuery="onQueryChange"
   >
   </Search>
 </template>
@@ -23,6 +25,7 @@ import type {
   CustomSortFunctions,
   FiltersDefinition,
   Filter,
+  SortOption,
 } from './components/types'
 
 let pagefindPath: string
@@ -31,6 +34,9 @@ if (import.meta.env.PROD) {
 } else {
   pagefindPath = '../../fixtures/pagefind/pagefind.js' // this needs to be the path relative from the file it is actually imported
 }
+
+const defaultSort: SortOption = { classification: 'asc' }
+let resultSort = ref<SortOption>(defaultSort)
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const pagefind = ref<any>(null)
@@ -135,6 +141,14 @@ const customSortFunctions: CustomSortFunctions = {
 function customDefaultSort(a: [string, number], b: [string, number]): number {
   // Sort by facet count ascending (internal default is descending)
   return b[1] - a[1]
+}
+
+function onQueryChange(newQuery: string) {
+  if (newQuery && newQuery.length > 0 && resultSort.value.relevance !== 'desc') {
+    resultSort.value = { relevance: 'desc' }
+  } else if (!newQuery) {
+    resultSort.value = defaultSort
+  }
 }
 </script>
 

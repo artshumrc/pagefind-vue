@@ -72,7 +72,7 @@ describe('PagefindSearch result sort parameter', () => {
     expect(mockPagefind.search).toHaveBeenCalledWith(
       'test query',
       expect.objectContaining({
-        sort: { relevance: 'desc' },
+        sort: { classification: 'asc' },
       }),
     )
   })
