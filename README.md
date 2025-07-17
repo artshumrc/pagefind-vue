@@ -199,18 +199,25 @@ const alphabeticalSortOrder = { title: 'desc' }
 </script>
 ```
 
-### Keyword Search and Sorting
+The resultSort object can be changed dynamically when the keyword changes using a handler for the emitted event `onQueryChange`, as below:
 
-By default, results are sorted in descending order of relevance when a keyword search is performed. To disable this and continue sorting by the provided result sorting order.
+```vue
+<Search :resultSort="resultSort" @update:searchQuery="onQueryChange">
+  </Search>
 
-This can be disabled by passing a value of false in the property `sort-by-relevance-with-keyword` when instantiating a Search component as below.
+<script>
+const defaultSort: SortOption = { classification: 'asc' }
+let resultSort = ref<SortOption>(defaultSort)
 
-````vue
-<Search
-  ...
-  :sort-by-relevance-with-keyword=false>
-  ...
-</Search>
+function onQueryChange(newQuery: string) {
+  if (newQuery && newQuery.length > 0) {
+    resultSort.value = { relevance: 'desc' }
+  } else if (!newQuery) {
+    resultSort.value = defaultSort
+  }
+}
+</script>
+```
 
 ## Hiding the Search Bar
 
@@ -222,7 +229,7 @@ If you want to hide the keyword search bar, you can pass a `showKeywordInput` pa
   :=":showKeywordInput="false"">
   ...
 </Search>
-````
+```
 
 ## Recommended IDE Setup
 

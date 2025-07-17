@@ -144,7 +144,7 @@ function customDefaultSort(a: [string, number], b: [string, number]): number {
 }
 
 function onQueryChange(newQuery: string) {
-  if (newQuery && newQuery.length > 0 && resultSort.value.relevance !== 'desc') {
+  if (newQuery && newQuery.length > 0) {
     resultSort.value = { relevance: 'desc' }
   } else if (!newQuery) {
     resultSort.value = defaultSort
