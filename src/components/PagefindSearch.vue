@@ -82,7 +82,6 @@ const props = withDefaults(
     showKeywordInput: true,
     itemsPerPage: 10,
     checkboxFilterThreshold: 8,
-    sortByRelevanceWithKeyword: true,
   },
 )
 
