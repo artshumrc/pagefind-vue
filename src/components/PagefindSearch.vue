@@ -76,6 +76,7 @@ const props = withDefaults(
     resultSort?: SortOption
     showKeywordInput?: boolean
     checkboxFilterThreshold?: number
+    sortByRelevanceWithKeyword?: boolean
   }>(),
   {
     showKeywordInput: true,
@@ -98,6 +99,8 @@ const selectedFilters = ref<{ [key: string]: string[] }>({})
 // Store per-tab filters
 const tabFilters = ref<{ [tabValue: string]: { [key: string]: string[] } }>({})
 const showKeywordInput = props.showKeywordInput
+
+const emit = defineEmits(['update:searchQuery'])
 
 const validFilterKeys = computed(() => {
   // Any filters not returned from this should not be sent to Pagefind
@@ -280,6 +283,8 @@ const sortedFilterGroups = computed(() => {
 
 watch(searchQuery, async (newQuery) => {
   currentPage.value = 1 // reset to first page on new search
+  emit('update:searchQuery', newQuery)
+  await nextTick() // wait for any changes to sort type, etc before searching
   await performSearch(newQuery || null)
 })
 
@@ -459,13 +464,15 @@ async function performSearch(query: string | null) {
   try {
     const searchFilters = getSearchFilters()
 
+    let desiredSort = props.resultSort || { classification: 'asc' }
+
     // Sync URL before performing search
     updateUrlParams(currentPage.value)
 
     // Perform main search with all filters
     const searchResults = await props.pagefind
       .search(query || null, {
-        sort: props.resultSort || { classification: 'asc' },
+        sort: desiredSort,
         filters: searchFilters,
       })
       .catch((error: Error) => {

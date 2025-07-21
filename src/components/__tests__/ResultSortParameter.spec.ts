@@ -15,7 +15,7 @@ describe('PagefindSearch result sort parameter', () => {
     vi.clearAllMocks()
   })
 
-  it('should apply resultSort when provided to search function', async () => {
+  it('should apply resultSort when provided to search function only without keyword', async () => {
     mockPagefind.search.mockClear()
 
     const customResultSort = { Date: 'asc' as 'asc' }
@@ -37,11 +37,10 @@ describe('PagefindSearch result sort parameter', () => {
     await nextTick()
 
     const vm = wrapper.vm as any
-    await vm.performSearch('test query')
+    await vm.performSearch()
 
-    //
     expect(mockPagefind.search).toHaveBeenCalledWith(
-      'test query',
+      null, // no query now
       expect.objectContaining({
         sort: customResultSort,
       }),
@@ -69,11 +68,11 @@ describe('PagefindSearch result sort parameter', () => {
     const vmDefault = wrapperDefault.vm as any
     await vmDefault.performSearch('test query')
 
-    // Search should be called with default sort
+    // Search should be called with relevance sort during keyword search
     expect(mockPagefind.search).toHaveBeenCalledWith(
       'test query',
       expect.objectContaining({
-        sort: { classification: 'asc' }, // this is currently the default in the component
+        sort: { classification: 'asc' },
       }),
     )
   })

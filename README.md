@@ -190,14 +190,32 @@ const excludedOptions = {
 To provide a sort ordering, pass an object whose key(s) are sort names as defined by `data-pagefind-sort` and values are either `asc` or `desc` for ascending or descending sorting order.
 
 ```vue
-<Search
-  ...
-  :=":result-sort="alphabeticalSortOrder"">
+<Search ... :result-sort="alphabeticalSortOrder">
   ...
 </Search>
 
 <script>
-const alphabeticalSortOrder = {title: "desc"}
+const alphabeticalSortOrder = { title: 'desc' }
+</script>
+```
+
+The resultSort object can be changed dynamically when the keyword changes using a handler for the emitted event `onQueryChange`, as below:
+
+```vue
+<Search :resultSort="resultSort" @update:searchQuery="onQueryChange">
+  </Search>
+
+<script>
+const defaultSort: SortOption = { classification: 'asc' }
+let resultSort = ref<SortOption>(defaultSort)
+
+function onQueryChange(newQuery: string) {
+  if (newQuery && newQuery.length > 0) {
+    resultSort.value = { relevance: 'desc' }
+  } else if (!newQuery) {
+    resultSort.value = defaultSort
+  }
+}
 </script>
 ```
 
