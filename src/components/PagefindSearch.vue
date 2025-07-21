@@ -76,7 +76,6 @@ const props = withDefaults(
     resultSort?: SortOption
     showKeywordInput?: boolean
     checkboxFilterThreshold?: number
-    sortByRelevanceWithKeyword?: boolean
   }>(),
   {
     showKeywordInput: true,
