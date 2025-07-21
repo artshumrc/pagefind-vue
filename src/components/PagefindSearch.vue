@@ -59,13 +59,13 @@ import { ref, onMounted, computed, watch, nextTick } from 'vue'
 import Tabs from './Tabs.vue'
 import Filters from './SearchFilters.vue'
 import Results from './SearchResults.vue'
-import type { FiltersDefinition, Filter, ResultData, SortOption } from './types'
+import type { FiltersDefinition, Filter, FilterGroup, ResultData, SortOption } from './types'
 
 const props = withDefaults(
   defineProps<{
     pagefind: any
     itemsPerPage?: number
-    filtersDefinition?: FiltersDefinition
+    filtersDefinition?: FiltersDefinition | FilterGroup[]
     tabbedFilter?: string
     defaultTab?: string
     excludeFilters?: string[]
