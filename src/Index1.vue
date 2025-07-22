@@ -23,6 +23,7 @@ import Search from './components/PagefindSearch.vue'
 import type {
   FilterSortFunction as FilterOptionsSortFunction,
   CustomSortFunctions,
+  FilterGroup,
   FiltersDefinition,
   Filter,
   SortOption,
@@ -52,23 +53,28 @@ onMounted(async () => {
 })
 
 // Define filters configuration
-const filtersDefinition: FiltersDefinition = {
-  'Crystal system': {
-    type: 'checkboxes',
-    label: 'Crystal System',
+const filtersDefinition: FilterGroup[] = [
+  {
+    label: 'Group 1',
+    collapsible: true,
+    initiallyOpen: false,
+    filters: {
+      'Crystal system': 'checkboxes',
+      Abundance: 'checkboxes',
+      Distribution: 'checkboxes',
+    },
   },
-  Abundance: 'checkboxes',
-  Distribution: 'checkboxes',
-  'Status at Tsumeb': {
-    type: 'checkboxes',
-    label: 'Status at Tsumeb',
+  {
+    label: 'Group 2',
+    collapsible: false,
+    initiallyOpen: true,
+    filters: {
+      'Status at Tsumeb': 'checkboxes',
+      Occurence: 'dropdown',
+      'Precursor Mineral': 'dropdown',
+    },
   },
-  Occurence: {
-    type: 'dropdown',
-    label: 'Paragenesis',
-  },
-  'Precursor Mineral': 'dropdown',
-}
+]
 
 const abundanceSortList = ['Very rare', 'Extremely rare', 'Very common', 'Common']
 const sortedTabList = ['Species', 'Specimen', 'Pseudomorph']

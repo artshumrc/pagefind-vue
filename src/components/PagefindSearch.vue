@@ -158,11 +158,25 @@ const filteredFilters = computed(() => {
   let result = {}
 
   if (props.filtersDefinition) {
+    // Helper function to check if a filter key exists in filtersDefinition
+    const isFilterDefined = (key: string): boolean => {
+      if (!props.filtersDefinition) return false
+      if (Array.isArray(props.filtersDefinition)) {
+        // FilterGroup[] format - check within each group's filters
+        return props.filtersDefinition.some(
+          (group) => group.filters && group.filters.hasOwnProperty(key),
+        )
+      } else {
+        // Legacy FiltersDefinition format
+        return (props.filtersDefinition as FiltersDefinition)?.hasOwnProperty(key) ?? false
+      }
+    }
+
     // If the user has supplied filtersDefinition,
     // limit the filters to only those defined
     result = Object.fromEntries(
       Object.entries(filters.value).filter(
-        ([key]) => key !== props.tabbedFilter && props.filtersDefinition?.hasOwnProperty(key),
+        ([key]) => key !== props.tabbedFilter && isFilterDefined(key),
       ),
     )
   } else {
@@ -263,10 +277,23 @@ const sortedFilterGroups = computed(() => {
 
   // If filtersDefinition is provided, use its order
   if (props.filtersDefinition) {
-    // Get the keys from filtersDefinition that are also in filteredFilters
-    return Object.keys(props.filtersDefinition).filter((key) =>
-      filteredFilters.value.hasOwnProperty(key),
-    )
+    if (Array.isArray(props.filtersDefinition)) {
+      // FilterGroup[] format - get all filter keys from all groups
+      const allFilterKeys: string[] = []
+      props.filtersDefinition.forEach((group) => {
+        Object.keys(group.filters).forEach((key) => {
+          if (filteredFilters.value.hasOwnProperty(key)) {
+            allFilterKeys.push(key)
+          }
+        })
+      })
+      return allFilterKeys
+    } else {
+      // Legacy FiltersDefinition format
+      return Object.keys(props.filtersDefinition).filter((key) =>
+        filteredFilters.value.hasOwnProperty(key),
+      )
+    }
   }
 
   // If filterGroupSortFunction is provided, use it
