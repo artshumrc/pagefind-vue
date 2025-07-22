@@ -34,7 +34,11 @@
         :custom-sort-functions="customSortFunctions"
         :checkbox-filter-threshold="checkboxFilterThreshold"
         @update:filters="handleFilterUpdate"
-      />
+      >
+        <template #collapse-title="slotProps">
+          <slot name="collapse-title" v-bind="slotProps" />
+        </template>
+      </Filters>
 
       <Results
         v-if="mounted"

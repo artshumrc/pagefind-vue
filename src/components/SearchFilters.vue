@@ -19,15 +19,21 @@
           @keydown.enter="toggleGroup(filterGroup.label)"
           @keydown.space.prevent="toggleGroup(filterGroup.label)"
         >
-          <h2 class="filter-group-title">
-            {{ filterGroup.label }}
-            <span class="collapse-icon">
-              <ChevronIcon
-                :direction="openGroups.has(filterGroup.label) ? 'up' : 'down'"
-                size="20"
-              />
-            </span>
-          </h2>
+          <slot
+            name="collapse-title"
+            :direction="openGroups.has(filterGroup.label) ? 'up' : 'down'"
+            :label="filterGroup.label"
+          >
+            <h2 class="filter-group-title">
+              {{ filterGroup.label }}
+              <span class="collapse-icon">
+                <ChevronIcon
+                  :direction="openGroups.has(filterGroup.label) ? 'up' : 'down'"
+                  size="20"
+                />
+              </span>
+            </h2>
+          </slot>
         </div>
         <div v-else class="filter-group-header">
           <h2 class="filter-group-title">{{ filterGroup.label }}</h2>
