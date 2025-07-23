@@ -57,7 +57,7 @@ const props = defineProps({
   totalResults: Number,
 })
 
-const emit = defineEmits(['update-url-params', 'perform-search'])
+const emit = defineEmits(['update-page', 'update-url-params', 'perform-search'])
 
 const componentCurrentPage = ref<number>(props.currentPage || 1)
 const componentPageResults = ref<(ResultData | null)[]>(props.pageResults)
@@ -108,6 +108,7 @@ watch(
 
 const handlePageChange = (page: number) => {
   componentCurrentPage.value = page
+  emit('update-page', page)
   emit('update-url-params', page)
   updateCurrentPageResults()
 }

@@ -45,6 +45,7 @@
         :total-results="totalResults"
         @update-url-params="updateUrlParams"
         @perform-search="performSearch"
+        @update-page="handlePageChange"
       >
         <template #result="{ result }">
           <slot name="result" :result="result" />
@@ -346,6 +347,10 @@ const updateUrlParams = (page: number) => {
   })
 
   window.history.replaceState({}, '', url)
+}
+
+function handlePageChange(page: number) {
+  currentPage.value = page
 }
 
 async function updateCurrentPageResults() {
