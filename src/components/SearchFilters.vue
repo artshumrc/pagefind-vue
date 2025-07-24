@@ -6,6 +6,7 @@
     <template v-if="isFilterGroupArray(filtersDefinition)">
       <div
         v-for="filterGroup in filtersDefinition"
+        v-show="hasFilterGroupItems(filterGroup)"
         :key="filterGroup.label"
         class="filter-group-container"
       >
@@ -49,7 +50,7 @@
               :key="groupName"
               class="filter-group"
             >
-              <template
+              <div
                 v-if="
                   filteredFilters[groupName] &&
                   Object.values(filteredFilters[groupName]).some((value) => value > 0)
@@ -64,7 +65,7 @@
                   :checkbox-filter-threshold="checkboxFilterThreshold"
                   @update:filters="handleSingleSelect"
                 />
-              </template>
+              </div>
             </div>
           </div>
         </Transition>
@@ -73,30 +74,28 @@
 
     <!-- Handle group-less FiltersDefinition format -->
     <template v-else>
-      <div v-for="groupName in sortedGroups" :key="groupName" class="filter-group">
-        <template
-          v-if="
-            filteredFilters[groupName] &&
-            Object.values(filteredFilters[groupName]).some((value) => value > 0)
-          "
-        >
-          <h3>{{ getFilterGroupLabel(groupName) }}</h3>
-          <FilterComponent
-            :name="groupName"
-            :options="filteredKeywordFilters[groupName]"
-            :selected-filters="selectedFilters"
-            :filter-type="getFilterType(groupName)"
-            :checkbox-filter-threshold="checkboxFilterThreshold"
-            @update:filters="handleSingleSelect"
-          />
-        </template>
+      <div
+        v-for="groupName in sortedGroups"
+        v-show="hasGroupItems(groupName)"
+        :key="groupName"
+        class="filter-group"
+      >
+        <h3>{{ getFilterGroupLabel(groupName) }}</h3>
+        <FilterComponent
+          :name="groupName"
+          :options="filteredKeywordFilters[groupName]"
+          :selected-filters="selectedFilters"
+          :filter-type="getFilterType(groupName)"
+          :checkbox-filter-threshold="checkboxFilterThreshold"
+          @update:filters="handleSingleSelect"
+        />
       </div>
     </template>
   </aside>
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, computed } from 'vue'
 import FilterComponent from './FilterComponent.vue'
 import type { FiltersDefinition, FilterGroup } from './types'
 import ChevronIcon from '../components/icons/ChevronIcon.vue'
@@ -115,6 +114,26 @@ const emit = defineEmits(['update:filters'])
 
 const mounted = ref(false)
 const openGroups = ref<Set<string>>(new Set())
+
+const hasFilterGroupItems = computed(() => {
+  return (filterGroup: FilterGroup) => {
+    return Object.keys(filterGroup.filters).some((groupName) => {
+      return (
+        props.filteredFilters[groupName] &&
+        Object.values(props.filteredFilters[groupName]).some((value) => value > 0)
+      )
+    })
+  }
+})
+
+const hasGroupItems = computed(() => {
+  return (groupName: string) => {
+    return (
+      props.filteredFilters[groupName] &&
+      Object.values(props.filteredFilters[groupName]).some((value) => value > 0)
+    )
+  }
+})
 
 onMounted(() => {
   mounted.value = true
