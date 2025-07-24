@@ -41,7 +41,7 @@
 
     <div class="content-layout">
       <Filters
-        v-if="mounted && Object.keys(filteredFilters).length > 0"
+        v-if="mounted && (Object.keys(filteredFilters).length > 0 || filtersDefinition)"
         :filtered-filters="filteredFilters"
         :filtered-keyword-filters="filteredKeywordFilters"
         :selected-filters="selectedFilters"
@@ -197,7 +197,10 @@ const filteredFilters = computed(() => {
     // limit the filters to only those defined
     result = Object.fromEntries(
       Object.entries(filters.value).filter(
-        ([key]) => key !== props.tabbedFilter && isFilterDefined(key),
+        ([key]) =>
+          key !== props.tabbedFilter &&
+          isFilterDefined(key) &&
+          (!props.excludeFilters || !props.excludeFilters.includes(key)),
       ),
     )
   } else {
