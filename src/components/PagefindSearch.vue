@@ -7,10 +7,26 @@
       :class="{ visible: mounted }"
     >
       <form class="search-form" @submit.prevent="performSearch(searchQuery)">
-        <div class="input-wrapper">
-          <label for="search" class="visually-hidden">Search</label>
-          <input id="search" name="search" size="1" autocomplete="off" v-model="searchQuery" />
-        </div>
+        <slot
+          name="search-input"
+          :search-query="searchQuery"
+          :update-search-query="(value) => (searchQuery = value)"
+        >
+          <div class="input-wrapper">
+            <label for="search" class="visually-hidden">Search</label>
+            <div class="search-input-container">
+              <MagnifyingGlass class="search-icon" size="24" color="#666" />
+              <input
+                id="search"
+                name="search"
+                size="1"
+                autocomplete="off"
+                v-model="searchQuery"
+                placeholder="Search..."
+              />
+            </div>
+          </div>
+        </slot>
         <button type="button" class="clear-button" @click="clearSearch">Clear</button>
       </form>
     </section>
@@ -63,6 +79,7 @@ import { ref, onMounted, computed, watch, nextTick } from 'vue'
 import Tabs from './Tabs.vue'
 import Filters from './SearchFilters.vue'
 import Results from './SearchResults.vue'
+import MagnifyingGlass from './icons/MagnifyingGlass.vue'
 import type { FiltersDefinition, Filter, FilterGroup, ResultData, SortOption } from './types'
 
 const props = withDefaults(
@@ -660,10 +677,24 @@ form {
   flex-direction: column;
 }
 
+.search-input-container {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.search-icon {
+  position: absolute;
+  left: 0.75rem;
+  z-index: 1;
+  pointer-events: none;
+}
+
 #search {
   width: 100%;
   color: black;
   font-size: 1rem;
+  padding-left: 3rem;
 }
 
 #results-list > li {
