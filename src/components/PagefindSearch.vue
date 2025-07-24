@@ -31,13 +31,23 @@
       </form>
     </section>
 
-    <Tabs
-      v-if="tabbedFilter"
-      v-model="activeTab"
-      :tabs="tabs"
-      :visible="mounted"
-      :filter-name="tabbedFilter"
-    />
+    <div
+      class="filters-tabs-header"
+      v-if="
+        mounted && (Object.keys(filteredFilters).length > 0 || filtersDefinition || tabbedFilter)
+      "
+    >
+      <h2 class="filters-header-title">{{ filtersTitle }}</h2>
+      <div class="tabs-container">
+        <Tabs
+          v-if="tabbedFilter"
+          v-model="activeTab"
+          :tabs="tabs"
+          :visible="mounted"
+          :filter-name="tabbedFilter"
+        />
+      </div>
+    </div>
 
     <div class="content-layout">
       <Filters
@@ -97,11 +107,13 @@ const props = withDefaults(
     resultSort?: SortOption
     showKeywordInput?: boolean
     checkboxFilterThreshold?: number
+    filtersTitle?: string
   }>(),
   {
     showKeywordInput: true,
     itemsPerPage: 10,
     checkboxFilterThreshold: 8,
+    filtersTitle: 'Filters',
   },
 )
 
@@ -723,6 +735,25 @@ section.results-section {
 }
 /* end AOS */
 
+.filters-tabs-header {
+  display: grid;
+  grid-template-columns: minmax(200px, 1fr) 3fr;
+  gap: 2rem;
+  align-items: center;
+  margin: 1rem 0;
+  padding: 0 1rem;
+}
+
+.filters-header-title {
+  margin: 0;
+  font-size: 1.2rem;
+  justify-self: start;
+}
+
+.tabs-container {
+  justify-self: start;
+}
+
 .content-layout {
   display: grid;
   grid-template-columns: minmax(200px, 1fr) 3fr;
@@ -758,7 +789,7 @@ button {
 .tabs {
   display: flex;
   gap: 1rem;
-  margin: 1rem 0;
+  margin: 0;
 }
 
 .tabs button {
@@ -808,6 +839,11 @@ button {
 @media (max-width: 768px) {
   .content-layout {
     grid-template-columns: 1fr;
+  }
+
+  .filters-tabs-header {
+    grid-template-columns: 1fr;
+    gap: 1rem;
   }
 
   .results-section {

@@ -1,7 +1,5 @@
 <template>
   <aside class="filters-sidebar fade-section" :class="{ visible: mounted }">
-    <h2 style="margin-bottom: 1rem">Filters</h2>
-
     <!-- Handle FilterGroup[] format -->
     <template v-if="isFilterGroupArray(filtersDefinition)">
       <div

@@ -5,6 +5,7 @@
     role="tabpanel"
   >
     <h2>{{ totalResultsCount }} Result<span v-if="totalResultsCount !== 1">s</span></h2>
+    <hr class="results-headder-content-separator" />
     <ul id="results-list">
       <li v-for="result in componentPageResults" :key="result?.raw_url">
         <template v-if="result">
@@ -170,6 +171,5 @@ button {
 h2 {
   margin-top: 0;
   margin-bottom: 0;
-  text-align: center;
 }
 </style>
