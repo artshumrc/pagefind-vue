@@ -216,6 +216,7 @@ const getFilterGroupLabel = (groupName: string, filterGroup?: FilterGroup): stri
   padding: 1rem;
   border-right: 1px solid #ccc;
   grid-column: 1;
+  overflow: visible;
 }
 
 .filter-group-header {
@@ -247,7 +248,7 @@ const getFilterGroupLabel = (groupName: string, filterGroup?: FilterGroup): stri
 
 .filter-group-content {
   padding-left: 1rem;
-  overflow: hidden;
+  overflow: visible;
 }
 
 .collapse-enter-active,
@@ -256,6 +257,11 @@ const getFilterGroupLabel = (groupName: string, filterGroup?: FilterGroup): stri
     max-height 0.3s cubic-bezier(0.4, 0, 0.2, 1),
     opacity 0.2s cubic-bezier(0.4, 0, 0.2, 1);
   overflow: hidden;
+}
+
+.collapse-enter-to,
+.collapse-leave-from {
+  overflow: visible;
 }
 
 .collapse-enter-from,
