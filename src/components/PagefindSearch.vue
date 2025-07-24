@@ -1,11 +1,7 @@
 <!-- This is named "PagefindSearch" because it Vue convention to not have single-word components. It is exported and consumed as `Search`, however. -->
 <template>
   <div class="search-container">
-    <section
-      v-if="showKeywordInput"
-      class="border-bottom fade-section"
-      :class="{ visible: mounted }"
-    >
+    <section v-if="showKeywordInput" class="fade-section" :class="{ visible: mounted }">
       <form class="search-form" @submit.prevent="performSearch(searchQuery)">
         <slot
           name="search-input"
