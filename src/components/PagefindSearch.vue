@@ -23,7 +23,6 @@
             </div>
           </div>
         </slot>
-        <button type="button" class="clear-button" @click="clearSearch">Clear</button>
       </form>
     </section>
 
@@ -33,15 +32,20 @@
         mounted && (Object.keys(filteredFilters).length > 0 || filtersDefinition || tabbedFilter)
       "
     >
-      <h2 class="filters-header-title">{{ filtersTitle }}</h2>
-      <div class="tabs-container">
-        <Tabs
-          v-if="tabbedFilter"
-          v-model="activeTab"
-          :tabs="tabs"
-          :visible="mounted"
-          :filter-name="tabbedFilter"
-        />
+      <div class="tabs-clear-row">
+        <h2 class="filters-header-title">{{ filtersTitle }}</h2>
+        <div class="tabs-results-align">
+          <div class="tabs-container">
+            <Tabs
+              v-if="tabbedFilter"
+              v-model="activeTab"
+              :tabs="tabs"
+              :visible="mounted"
+              :filter-name="tabbedFilter"
+            />
+          </div>
+        </div>
+        <button type="button" class="clear-button" @click="clearSearch">Clear</button>
       </div>
     </div>
 
@@ -788,22 +792,38 @@ section.results-section {
 /* end AOS */
 
 .filters-tabs-header {
-  display: grid;
-  grid-template-columns: minmax(200px, 1fr) 3fr;
-  gap: 2rem;
-  align-items: center;
   margin: 1rem 0;
   padding: 0 1rem;
+}
+
+.tabs-clear-row {
+  display: grid;
+  grid-template-columns: minmax(200px, 1fr) 3fr auto;
+  align-items: center;
+  gap: 2rem;
+}
+
+.tabs-results-align {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  grid-column: 2;
 }
 
 .filters-header-title {
   margin: 0;
   font-size: 1.2rem;
   justify-self: start;
+  flex: 0 0 auto;
 }
 
 .tabs-container {
+  flex: 1;
   justify-self: start;
+}
+
+.clear-button {
+  margin-left: auto;
 }
 
 .content-layout {
