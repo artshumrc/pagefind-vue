@@ -17,7 +17,7 @@
       </button>
     </div>
     <div class="checkbox-container">
-      <div v-for="value in filteredOptions" :key="value">
+      <div v-for="value in filteredOptions" :key="value" class="checkbox-group">
         <Checkbox
           :filter-group="name"
           :value="value"
