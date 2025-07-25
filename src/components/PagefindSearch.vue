@@ -69,6 +69,7 @@
         :items-per-page="itemsPerPage"
         :current-page="currentPage"
         :total-results="totalResults"
+        :active-filters-text="activeFiltersText"
         @update-url-params="updateUrlParams"
         @perform-search="performSearch"
       >
@@ -337,6 +338,61 @@ const sortedFilterGroups = computed(() => {
 
   // Fall back to alphabetical order
   return Object.keys(filteredFilters.value).sort((a, b) => a.localeCompare(b))
+})
+
+const getFilterGroupLabel = (groupName: string, filterGroup?: FilterGroup): string => {
+  if (filterGroup) {
+    // When using FilterGroup array, look within the group's filters
+    const filterDef = filterGroup.filters[groupName]
+    if (filterDef && typeof filterDef === 'object' && filterDef.label) {
+      return filterDef.label
+    }
+  } else if (props.filtersDefinition && !Array.isArray(props.filtersDefinition)) {
+    // flat format
+    const filterDef = props.filtersDefinition[groupName]
+    if (filterDef && typeof filterDef === 'object' && filterDef.label) {
+      return filterDef.label
+    }
+  }
+
+  return groupName
+}
+
+const activeFiltersText = computed(() => {
+  const activeFilters: string[] = []
+
+  // Add search query if present
+  if (searchQuery.value) {
+    activeFilters.push(`Searchbar: "${searchQuery.value}"`)
+  }
+
+  // Add selected filters with their display labels
+  Object.entries(selectedFilters.value).forEach(([groupName, values]) => {
+    if (values && values.length > 0) {
+      // Get the display label for this filter group
+      let groupLabel = groupName
+
+      if (props.filtersDefinition) {
+        if (Array.isArray(props.filtersDefinition)) {
+          // Find the FilterGroup that contains this filter
+          const filterGroup = props.filtersDefinition.find(
+            (group) => group.filters && group.filters.hasOwnProperty(groupName),
+          )
+          if (filterGroup) {
+            groupLabel = getFilterGroupLabel(groupName, filterGroup)
+          }
+        } else {
+          groupLabel = getFilterGroupLabel(groupName)
+        }
+      }
+
+      values.forEach((value) => {
+        activeFilters.push(`${groupLabel}: ${value}`)
+      })
+    }
+  })
+
+  return activeFilters.join('; ')
 })
 
 watch(searchQuery, async (newQuery) => {
