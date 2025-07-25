@@ -40,7 +40,6 @@ describe('Search pagination', () => {
 
     let resultEls = wrapper.findAll('li')
     let resultTexts = resultEls.map(el => el.text())
-    console.log(resultTexts)
     expect(resultTexts).toEqual(
       Array.from({length: 10}, (_, i) => `Result #${i+1}`)
     );
@@ -49,7 +48,6 @@ describe('Search pagination', () => {
     await flushPromises();
     resultEls = wrapper.findAll('li')
     resultTexts = resultEls.map(el => el.text())
-    console.log(resultTexts)
 
     expect(resultTexts).toEqual(
       Array.from({length: 10}, (_, i) => `Result #${i+11}`)
@@ -60,7 +58,6 @@ describe('Search pagination', () => {
     await flushPromises();
     resultEls = wrapper.findAll('li')
     resultTexts = resultEls.map(el => el.text())
-    console.log(resultTexts)
 
     expect(resultTexts).toEqual(
       Array.from({length: 5}, (_, i) => `Result #${i+21}`)
@@ -71,7 +68,6 @@ describe('Search pagination', () => {
     await flushPromises();
     resultEls = wrapper.findAll('li')
     resultTexts = resultEls.map(el => el.text())
-    console.log(resultTexts)
 
     expect(resultTexts).toEqual(
       Array.from({length: 10}, (_, i) => `Result #${i+11}`)
