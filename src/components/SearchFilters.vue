@@ -218,7 +218,6 @@ const getFilterGroupLabel = (groupName: string, filterGroup?: FilterGroup): stri
 }
 
 .filter-group-header {
-  padding: 0.5rem;
   margin-bottom: 0.5rem;
 }
 
@@ -245,7 +244,6 @@ const getFilterGroupLabel = (groupName: string, filterGroup?: FilterGroup): stri
 }
 
 .filter-group-content {
-  padding-left: 1rem;
   overflow: visible;
 }
 
