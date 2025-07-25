@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import { mount, flushPromises } from '@vue/test-utils'
-import Search from '../PagefindSearch.vue' // update with your correct path
+import Search from '../PagefindSearch.vue'
 
 function makePagefindMock(total = 25) {
   return {
