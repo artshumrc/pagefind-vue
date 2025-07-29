@@ -143,13 +143,32 @@ const isFilterGroupArray = (def: any): def is FilterGroup[] => {
   return Array.isArray(def)
 }
 
-// Initialize open groups based on initiallyOpen property
+// Initialize open groups based on initiallyOpen property and active filters
 const initializeOpenGroups = () => {
   if (isFilterGroupArray(props.filtersDefinition)) {
     const initiallyOpenGroups = props.filtersDefinition
-      .filter((group) => group.initiallyOpen !== false)
+      .filter((group) => {
+        if (group.initiallyOpen !== false) {
+          return true
+        }
+
+        // Check if any filter in this group has selected values
+        return Object.keys(group.filters).some((groupName) => {
+          const selectedValues = props.selectedFilters[groupName]
+          return selectedValues && selectedValues.length > 0
+        })
+      })
       .map((group) => group.label)
     openGroups.value = new Set(initiallyOpenGroups)
+  } else {
+    // For flat format, check if any group has active filters
+    const groupsWithActiveFilters =
+      props.sortedGroups?.filter((groupName) => {
+        const selectedValues = props.selectedFilters[groupName]
+        return selectedValues && selectedValues.length > 0
+      }) || []
+
+    openGroups.value = new Set(groupsWithActiveFilters)
   }
 }
 

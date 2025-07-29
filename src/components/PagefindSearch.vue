@@ -132,15 +132,9 @@ const selectedFilters = ref<{ [key: string]: string[] }>({})
 // Store per-tab filters
 const tabFilters = ref<{ [tabValue: string]: { [key: string]: string[] } }>({})
 const showKeywordInput = props.showKeywordInput
+const isInitializing = ref(true)
 
 const emit = defineEmits(['update:searchQuery'])
-
-const validFilterKeys = computed(() => {
-  // Any filters not returned from this should not be sent to Pagefind
-  return filters.value
-    ? Object.keys(filters.value).filter((key) => !props.excludeFilters?.includes(key))
-    : []
-})
 
 onMounted(async () => {
   if (props.pagefind) {
@@ -154,8 +148,15 @@ onMounted(async () => {
   // Load all filter values from URL
   selectedFilters.value = {}
   for (const [param, value] of searchParams.entries()) {
-    // validate which filters should be sent to Pagefind
-    if (validFilterKeys.value.includes(param)) {
+    // Skip 'page' and 'search' params, validate other filters
+    if (param === 'page' || param === 'search') {
+      continue
+    }
+
+    // Only validate against excludeFilters if they exist, otherwise accept all filters
+    // This allows URL params to be restored even before filters.value is fully populated
+    const shouldExclude = props.excludeFilters?.includes(param) ?? false
+    if (!shouldExclude) {
       if (!selectedFilters.value[param]) {
         selectedFilters.value[param] = []
       }
@@ -182,7 +183,8 @@ onMounted(async () => {
     searchQuery.value = search
   }
 
-  await performSearch(search)
+  await performSearch(search, true) // initial load
+  isInitializing.value = false
   mounted.value = true
 })
 
@@ -400,6 +402,9 @@ const activeFiltersText = computed(() => {
 })
 
 watch(searchQuery, async (newQuery) => {
+  // Skip the watcher during initial setup to avoid overwriting URL params
+  if (isInitializing.value) return
+
   currentPage.value = 1 // reset to first page on new search
   emit('update:searchQuery', newQuery)
   await nextTick() // wait for any changes to sort type, etc before searching
@@ -409,6 +414,9 @@ watch(searchQuery, async (newQuery) => {
 watch(
   () => activeTab.value,
   async (newValue, oldValue) => {
+    // Skip the watcher during initial setup to avoid overwriting URL params
+    if (isInitializing.value) return
+
     if (newValue) {
       if (props.tabbedFilter) {
         // save current filters for previous tab (except tabbedFilter itself)
@@ -576,7 +584,8 @@ const handleFilterUpdate = (group: string, value: string) => {
   performSearch(searchQuery.value)
 }
 
-async function performSearch(query: string | null) {
+async function performSearch(query: string | null, isInitialLoad: boolean = false) {
+  console.log('Performing search with query:', query)
   if (!props.pagefind) return
 
   try {
@@ -584,8 +593,10 @@ async function performSearch(query: string | null) {
 
     let desiredSort = props.resultSort || { classification: 'asc' }
 
-    // Sync URL before performing search
-    updateUrlParams(currentPage.value)
+    // Only sync URL during user-initiated searches, not during initial page load
+    if (!isInitialLoad) {
+      updateUrlParams(currentPage.value)
+    }
 
     // Perform main search with all filters
     const searchResults = await props.pagefind
@@ -642,9 +653,9 @@ function getSearchFilters() {
     searchFilters[props.tabbedFilter] = [activeTab.value]
   }
 
-  // Add other selected filters
+  // Add other selected filters, excluding any that are in excludeFilters
   Object.entries(selectedFilters.value).forEach(([group, values]) => {
-    if (values.length > 0) {
+    if (values.length > 0 && !props.excludeFilters?.includes(group)) {
       searchFilters[group] = values
     }
   })
