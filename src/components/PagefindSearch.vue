@@ -170,6 +170,9 @@ onMounted(async () => {
 
   if (props.tabbedFilter && !activeTab.value) {
     activeTab.value = props.defaultTab || ''
+    if (activeTab.value) {
+      selectedFilters.value[props.tabbedFilter] = [activeTab.value]
+    }
   }
 
   if (pageParam) {
@@ -699,6 +702,16 @@ function calculateTabCounts(filtersMinusTab: Filter = {}) {
     props.defaultTab,
   )
 }
+
+// Expose internal state and methods for testing
+defineExpose({
+  selectedFilters,
+  activeTab,
+  searchQuery,
+  clearSearch,
+  mounted,
+  isInitializing,
+})
 </script>
 
 <style>
