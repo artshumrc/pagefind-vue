@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { mount } from '@vue/test-utils'
+import { mount, flushPromises } from '@vue/test-utils'
 import { nextTick } from 'vue'
 import PagefindSearch from '../PagefindSearch.vue'
 
@@ -14,6 +14,8 @@ interface PagefindSearchInstance extends ComponentPublicInstance {
   onPopState?: () => void
   activeTab?: string
   searchQuery: string
+  isInitializing?: boolean
+  mounted?: boolean
   $data: {
     activeTab: string
     searchQuery: string
@@ -300,6 +302,11 @@ describe('PagefindSearch tabs persistence and activation', () => {
     // Cast vm to PagefindSearchInstance
     const vm = wrapper.vm as unknown as PagefindSearchInstance
 
+    // Wait for initialization to complete
+    while (vm.isInitializing) {
+      await nextTick()
+    }
+
     // Initial state should have Technology tab selected
     expect(vm.selectedFilters.category).toEqual(['Technology'])
 
@@ -346,7 +353,7 @@ describe('PagefindSearch tabs persistence and activation', () => {
 
       // Use vm.activeTab directly since it's a ref exposed from the component
       vm.activeTab = 'Science'
-      await nextTick()
+      await flushPromises()
 
       // Verify tab change
       expect(vm.selectedFilters.category).toEqual(['Science'])
@@ -357,7 +364,7 @@ describe('PagefindSearch tabs persistence and activation', () => {
 
       // Switch back to Technology
       vm.activeTab = 'Technology'
-      await nextTick()
+      await flushPromises()
 
       // Verify Technology tab filters are restored
       expect(vm.selectedFilters.category).toEqual(['Technology'])
@@ -376,12 +383,15 @@ describe('PagefindSearch tabs persistence and activation', () => {
         stubs: {
           Filters: true,
           Results: true,
+          Tabs: true,
         },
       },
     })
 
     await nextTick()
-    await nextTick() // Additional ticks to ensure async operations complete
+
+    // Wait for all promises to resolve (including the onMounted lifecycle hook)
+    await flushPromises()
 
     // Cast vm to PagefindSearchInstance
     const vm = wrapper.vm as unknown as PagefindSearchInstance
@@ -407,7 +417,6 @@ describe('PagefindSearch tabs persistence and activation', () => {
     await clearButton.trigger('click')
 
     await nextTick()
-    await nextTick() // Additional ticks to ensure clearSearch completes
 
     // Verify tab filter is still active but other filters are cleared
     expect(vm.selectedFilters.category).toEqual(['Technology'])

@@ -1,31 +1,57 @@
 <!-- This is named "PagefindSearch" because it Vue convention to not have single-word components. It is exported and consumed as `Search`, however. -->
 <template>
   <div class="search-container">
-    <section
-      v-if="showKeywordInput"
-      class="border-bottom fade-section"
-      :class="{ visible: mounted }"
-    >
+    <section v-if="showKeywordInput" class="fade-section" :class="{ visible: mounted }">
       <form class="search-form" @submit.prevent="performSearch(searchQuery)">
-        <div class="input-wrapper">
-          <label for="search" class="visually-hidden">Search</label>
-          <input id="search" name="search" size="1" autocomplete="off" v-model="searchQuery" />
-        </div>
-        <button type="button" class="clear-button" @click="clearSearch">Clear</button>
+        <slot
+          name="search-input"
+          :search-query="searchQuery"
+          :update-search-query="(value) => (searchQuery = value)"
+        >
+          <div class="input-wrapper">
+            <label for="search" class="visually-hidden">Search</label>
+            <div class="search-input-container">
+              <MagnifyingGlass class="search-icon" size="24" color="#666" />
+              <input
+                id="search"
+                name="search"
+                size="1"
+                autocomplete="off"
+                v-model="searchQuery"
+                placeholder="Search..."
+              />
+            </div>
+          </div>
+        </slot>
       </form>
     </section>
 
-    <Tabs
-      v-if="tabbedFilter"
-      v-model="activeTab"
-      :tabs="tabs"
-      :visible="mounted"
-      :filter-name="tabbedFilter"
-    />
+    <div
+      class="filters-tabs-header"
+      v-if="
+        mounted && (Object.keys(filteredFilters).length > 0 || filtersDefinition || tabbedFilter)
+      "
+    >
+      <div class="tabs-clear-row">
+        <h2 class="filters-header-title">{{ filtersTitle }}</h2>
+        <div class="tabs-results-align">
+          <div class="tabs-container">
+            <Tabs
+              v-if="tabbedFilter"
+              v-model="activeTab"
+              :tabs="tabs"
+              :visible="mounted"
+              :filter-name="tabbedFilter"
+            />
+          </div>
+        </div>
+        <button type="button" class="clear-button" @click="clearSearch">Clear</button>
+      </div>
+    </div>
 
     <div class="content-layout">
       <Filters
-        v-if="mounted && Object.keys(filteredFilters).length > 0"
+        v-if="mounted && (Object.keys(filteredFilters).length > 0 || filtersDefinition)"
         :filtered-filters="filteredFilters"
         :filtered-keyword-filters="filteredKeywordFilters"
         :selected-filters="selectedFilters"
@@ -34,7 +60,11 @@
         :custom-sort-functions="customSortFunctions"
         :checkbox-filter-threshold="checkboxFilterThreshold"
         @update:filters="handleFilterUpdate"
-      />
+      >
+        <template #collapse-title="slotProps">
+          <slot name="collapse-title" v-bind="slotProps" />
+        </template>
+      </Filters>
 
       <Results
         v-if="mounted"
@@ -43,6 +73,7 @@
         :items-per-page="itemsPerPage"
         :current-page="currentPage"
         :total-results="totalResults"
+        :active-filters-text="activeFiltersText"
         @update-url-params="updateUrlParams"
         @perform-search="performSearch"
         @update-page="handlePageChange"
@@ -60,13 +91,14 @@ import { ref, onMounted, computed, watch, nextTick } from 'vue'
 import Tabs from './Tabs.vue'
 import Filters from './SearchFilters.vue'
 import Results from './SearchResults.vue'
-import type { FiltersDefinition, Filter, ResultData, SortOption } from './types'
+import MagnifyingGlass from './icons/MagnifyingGlass.vue'
+import type { FiltersDefinition, Filter, FilterGroup, ResultData, SortOption } from './types'
 
 const props = withDefaults(
   defineProps<{
     pagefind: any
     itemsPerPage?: number
-    filtersDefinition?: FiltersDefinition
+    filtersDefinition?: FiltersDefinition | FilterGroup[]
     tabbedFilter?: string
     defaultTab?: string
     excludeFilters?: string[]
@@ -77,11 +109,13 @@ const props = withDefaults(
     resultSort?: SortOption
     showKeywordInput?: boolean
     checkboxFilterThreshold?: number
+    filtersTitle?: string
   }>(),
   {
     showKeywordInput: true,
     itemsPerPage: 10,
     checkboxFilterThreshold: 8,
+    filtersTitle: 'Filters',
   },
 )
 
@@ -99,15 +133,9 @@ const selectedFilters = ref<{ [key: string]: string[] }>({})
 // Store per-tab filters
 const tabFilters = ref<{ [tabValue: string]: { [key: string]: string[] } }>({})
 const showKeywordInput = props.showKeywordInput
+const isInitializing = ref(true)
 
 const emit = defineEmits(['update:searchQuery'])
-
-const validFilterKeys = computed(() => {
-  // Any filters not returned from this should not be sent to Pagefind
-  return filters.value
-    ? Object.keys(filters.value).filter((key) => !props.excludeFilters?.includes(key))
-    : []
-})
 
 onMounted(async () => {
   if (props.pagefind) {
@@ -121,8 +149,15 @@ onMounted(async () => {
   // Load all filter values from URL
   selectedFilters.value = {}
   for (const [param, value] of searchParams.entries()) {
-    // validate which filters should be sent to Pagefind
-    if (validFilterKeys.value.includes(param)) {
+    // Skip 'page' and 'search' params, validate other filters
+    if (param === 'page' || param === 'search') {
+      continue
+    }
+
+    // Only validate against excludeFilters if they exist, otherwise accept all filters
+    // This allows URL params to be restored even before filters.value is fully populated
+    const shouldExclude = props.excludeFilters?.includes(param) ?? false
+    if (!shouldExclude) {
       if (!selectedFilters.value[param]) {
         selectedFilters.value[param] = []
       }
@@ -136,6 +171,9 @@ onMounted(async () => {
 
   if (props.tabbedFilter && !activeTab.value) {
     activeTab.value = props.defaultTab || ''
+    if (activeTab.value) {
+      selectedFilters.value[props.tabbedFilter] = [activeTab.value]
+    }
   }
 
   if (pageParam) {
@@ -149,7 +187,8 @@ onMounted(async () => {
     searchQuery.value = search
   }
 
-  await performSearch(search)
+  await performSearch(search, true) // initial load
+  isInitializing.value = false
   mounted.value = true
 })
 
@@ -159,11 +198,28 @@ const filteredFilters = computed(() => {
   let result = {}
 
   if (props.filtersDefinition) {
+    // Helper function to check if a filter key exists in filtersDefinition
+    const isFilterDefined = (key: string): boolean => {
+      if (!props.filtersDefinition) return false
+      if (Array.isArray(props.filtersDefinition)) {
+        // FilterGroup[] format - check within each group's filters
+        return props.filtersDefinition.some(
+          (group) => group.filters && group.filters.hasOwnProperty(key),
+        )
+      } else {
+        // Legacy FiltersDefinition format
+        return (props.filtersDefinition as FiltersDefinition)?.hasOwnProperty(key) ?? false
+      }
+    }
+
     // If the user has supplied filtersDefinition,
     // limit the filters to only those defined
     result = Object.fromEntries(
       Object.entries(filters.value).filter(
-        ([key]) => key !== props.tabbedFilter && props.filtersDefinition?.hasOwnProperty(key),
+        ([key]) =>
+          key !== props.tabbedFilter &&
+          isFilterDefined(key) &&
+          (!props.excludeFilters || !props.excludeFilters.includes(key)),
       ),
     )
   } else {
@@ -264,10 +320,23 @@ const sortedFilterGroups = computed(() => {
 
   // If filtersDefinition is provided, use its order
   if (props.filtersDefinition) {
-    // Get the keys from filtersDefinition that are also in filteredFilters
-    return Object.keys(props.filtersDefinition).filter((key) =>
-      filteredFilters.value.hasOwnProperty(key),
-    )
+    if (Array.isArray(props.filtersDefinition)) {
+      // FilterGroup[] format - get all filter keys from all groups
+      const allFilterKeys: string[] = []
+      props.filtersDefinition.forEach((group) => {
+        Object.keys(group.filters).forEach((key) => {
+          if (filteredFilters.value.hasOwnProperty(key)) {
+            allFilterKeys.push(key)
+          }
+        })
+      })
+      return allFilterKeys
+    } else {
+      // Legacy FiltersDefinition format
+      return Object.keys(props.filtersDefinition).filter((key) =>
+        filteredFilters.value.hasOwnProperty(key),
+      )
+    }
   }
 
   // If filterGroupSortFunction is provided, use it
@@ -281,7 +350,65 @@ const sortedFilterGroups = computed(() => {
   return Object.keys(filteredFilters.value).sort((a, b) => a.localeCompare(b))
 })
 
+const getFilterGroupLabel = (groupName: string, filterGroup?: FilterGroup): string => {
+  if (filterGroup) {
+    // When using FilterGroup array, look within the group's filters
+    const filterDef = filterGroup.filters[groupName]
+    if (filterDef && typeof filterDef === 'object' && filterDef.label) {
+      return filterDef.label
+    }
+  } else if (props.filtersDefinition && !Array.isArray(props.filtersDefinition)) {
+    // flat format
+    const filterDef = props.filtersDefinition[groupName]
+    if (filterDef && typeof filterDef === 'object' && filterDef.label) {
+      return filterDef.label
+    }
+  }
+
+  return groupName
+}
+
+const activeFiltersText = computed(() => {
+  const activeFilters: string[] = []
+
+  // Add search query if present
+  if (searchQuery.value) {
+    activeFilters.push(`Searchbar: "${searchQuery.value}"`)
+  }
+
+  // Add selected filters with their display labels
+  Object.entries(selectedFilters.value).forEach(([groupName, values]) => {
+    if (values && values.length > 0) {
+      // Get the display label for this filter group
+      let groupLabel = groupName
+
+      if (props.filtersDefinition) {
+        if (Array.isArray(props.filtersDefinition)) {
+          // Find the FilterGroup that contains this filter
+          const filterGroup = props.filtersDefinition.find(
+            (group) => group.filters && group.filters.hasOwnProperty(groupName),
+          )
+          if (filterGroup) {
+            groupLabel = getFilterGroupLabel(groupName, filterGroup)
+          }
+        } else {
+          groupLabel = getFilterGroupLabel(groupName)
+        }
+      }
+
+      values.forEach((value) => {
+        activeFilters.push(`${groupLabel}: ${value}`)
+      })
+    }
+  })
+
+  return activeFilters.join('; ')
+})
+
 watch(searchQuery, async (newQuery) => {
+  // Skip the watcher during initial setup to avoid overwriting URL params
+  if (isInitializing.value) return
+
   currentPage.value = 1 // reset to first page on new search
   emit('update:searchQuery', newQuery)
   await nextTick() // wait for any changes to sort type, etc before searching
@@ -291,6 +418,9 @@ watch(searchQuery, async (newQuery) => {
 watch(
   () => activeTab.value,
   async (newValue, oldValue) => {
+    // Skip the watcher during initial setup to avoid overwriting URL params
+    if (isInitializing.value) return
+
     if (newValue) {
       if (props.tabbedFilter) {
         // save current filters for previous tab (except tabbedFilter itself)
@@ -462,7 +592,8 @@ const handleFilterUpdate = (group: string, value: string) => {
   performSearch(searchQuery.value)
 }
 
-async function performSearch(query: string | null) {
+async function performSearch(query: string | null, isInitialLoad: boolean = false) {
+  console.log('Performing search with query:', query)
   if (!props.pagefind) return
 
   try {
@@ -470,8 +601,10 @@ async function performSearch(query: string | null) {
 
     let desiredSort = props.resultSort || { classification: 'asc' }
 
-    // Sync URL before performing search
-    updateUrlParams(currentPage.value)
+    // Only sync URL during user-initiated searches, not during initial page load
+    if (!isInitialLoad) {
+      updateUrlParams(currentPage.value)
+    }
 
     // Perform main search with all filters
     const searchResults = await props.pagefind
@@ -528,9 +661,9 @@ function getSearchFilters() {
     searchFilters[props.tabbedFilter] = [activeTab.value]
   }
 
-  // Add other selected filters
+  // Add other selected filters, excluding any that are in excludeFilters
   Object.entries(selectedFilters.value).forEach(([group, values]) => {
-    if (values.length > 0) {
+    if (values.length > 0 && !props.excludeFilters?.includes(group)) {
       searchFilters[group] = values
     }
   })
@@ -574,6 +707,16 @@ function calculateTabCounts(filtersMinusTab: Filter = {}) {
     props.defaultTab,
   )
 }
+
+// Expose internal state and methods for testing
+defineExpose({
+  selectedFilters,
+  activeTab,
+  searchQuery,
+  clearSearch,
+  mounted,
+  isInitializing,
+})
 </script>
 
 <style>
@@ -634,10 +777,24 @@ form {
   flex-direction: column;
 }
 
+.search-input-container {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.search-icon {
+  position: absolute;
+  left: 0.75rem;
+  z-index: 1;
+  pointer-events: none;
+}
+
 #search {
   width: 100%;
   color: black;
   font-size: 1rem;
+  padding-left: 3rem;
 }
 
 #results-list > li {
@@ -662,6 +819,41 @@ section.results-section {
   opacity: 1;
 }
 /* end AOS */
+
+.filters-tabs-header {
+  margin: 1rem 0;
+  padding: 0 1rem;
+}
+
+.tabs-clear-row {
+  display: grid;
+  grid-template-columns: minmax(200px, 1fr) 3fr auto;
+  align-items: center;
+  gap: 2rem;
+}
+
+.tabs-results-align {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  grid-column: 2;
+}
+
+.filters-header-title {
+  margin: 0;
+  font-size: 1.2rem;
+  justify-self: start;
+  flex: 0 0 auto;
+}
+
+.tabs-container {
+  flex: 1;
+  justify-self: start;
+}
+
+.clear-button {
+  margin-left: auto;
+}
 
 .content-layout {
   display: grid;
@@ -698,7 +890,7 @@ button {
 .tabs {
   display: flex;
   gap: 1rem;
-  margin: 1rem 0;
+  margin: 0;
 }
 
 .tabs button {
@@ -748,6 +940,11 @@ button {
 @media (max-width: 768px) {
   .content-layout {
     grid-template-columns: 1fr;
+  }
+
+  .filters-tabs-header {
+    grid-template-columns: 1fr;
+    gap: 1rem;
   }
 
   .results-section {

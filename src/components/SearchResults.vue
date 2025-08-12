@@ -4,7 +4,11 @@
     :class="{ visible: true }"
     role="tabpanel"
   >
+    <div v-if="activeFiltersText" class="active-filters-text">
+      {{ activeFiltersText }}
+    </div>
     <h2>{{ totalResultsCount }} Result<span v-if="totalResultsCount !== 1">s</span></h2>
+    <hr class="results-headder-content-separator" />
     <ul id="results-list">
       <li v-for="result in componentPageResults" :key="result?.raw_url">
         <template v-if="result">
@@ -55,6 +59,10 @@ const props = defineProps({
   },
   currentPage: Number,
   totalResults: Number,
+  activeFiltersText: {
+    type: String,
+    default: '',
+  },
 })
 
 const emit = defineEmits(['update-page', 'update-url-params', 'perform-search'])
@@ -140,6 +148,12 @@ async function updateCurrentPageResults() {
   padding: 1rem;
 }
 
+.active-filters-text {
+  font-size: 0.75rem;
+  color: #666;
+  margin-bottom: 0.5rem;
+}
+
 .result {
   display: flex;
   flex-direction: column;
@@ -171,6 +185,5 @@ button {
 h2 {
   margin-top: 0;
   margin-bottom: 0;
-  text-align: center;
 }
 </style>

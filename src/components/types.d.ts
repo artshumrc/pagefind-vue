@@ -15,6 +15,13 @@ export type FiltersDefinition = {
   [key: string]: string | FilterDefinitionObject
 }
 
+export type FilterGroup = {
+  label: string // Label for the filter group
+  collapsible?: boolean // Whether the group is collapsible
+  initiallyOpen?: boolean // Whether the group is initially expanded
+  filters: FiltersDefinition // Definition of filters within the group
+}
+
 export interface Filter {
   [key: string]: {
     [key: string]: number

@@ -329,7 +329,7 @@ onMounted(() => {
   width: 100%;
   max-height: var(--pagefind-vue-options-max-height);
   overflow-y: auto;
-  z-index: var(--pagefind-vue-options-z-index);
+  z-index: var(--pagefind-vue-options-z-index, 1000);
   background: var(--pagefind-vue-options-bg);
   border: var(--pagefind-vue-options-border);
   border-top: none;

@@ -16,7 +16,7 @@
         <XIcon size="16" color="#000" />
       </button>
     </div>
-    <div class="checkbox-container">
+    <div class="checkbox-container checkbox-group">
       <div v-for="value in filteredOptions" :key="value">
         <Checkbox
           :filter-group="name"

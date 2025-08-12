@@ -14,6 +14,26 @@
     :resultSort="resultSort"
     @update:searchQuery="onQueryChange"
   >
+    <template #collapse-title="{ direction, label }">
+      <h2 style="padding: 0; margin: 0">
+        {{ label }}
+        <span class="collapse-icon">
+          <svg
+            class="chevron-icon"
+            xmlns="http://www.w3.org/2000/svg"
+            width="22"
+            height="22"
+            fill="currentColor"
+            viewBox="0 0 256 256"
+            :direction="direction"
+          >
+            <path
+              d="M213.66,101.66l-80,80a8,8,0,0,1-11.32,0l-80-80A8,8,0,0,1,53.66,90.34L128,164.69l74.34-74.35a8,8,0,0,1,11.32,11.32Z"
+            ></path>
+          </svg>
+        </span>
+      </h2>
+    </template>
   </Search>
 </template>
 
@@ -23,7 +43,7 @@ import Search from './components/PagefindSearch.vue'
 import type {
   FilterSortFunction as FilterOptionsSortFunction,
   CustomSortFunctions,
-  FiltersDefinition,
+  FilterGroup,
   Filter,
   SortOption,
 } from './components/types'
@@ -52,23 +72,28 @@ onMounted(async () => {
 })
 
 // Define filters configuration
-const filtersDefinition: FiltersDefinition = {
-  'Crystal system': {
-    type: 'checkboxes',
-    label: 'Crystal System',
+const filtersDefinition: FilterGroup[] = [
+  {
+    label: 'Group 1',
+    collapsible: true,
+    initiallyOpen: false,
+    filters: {
+      'Crystal system': 'checkboxes',
+      Abundance: 'checkboxes',
+      Distribution: 'checkboxes',
+    },
   },
-  Abundance: 'checkboxes',
-  Distribution: 'checkboxes',
-  'Status at Tsumeb': {
-    type: 'checkboxes',
-    label: 'Status at Tsumeb',
+  {
+    label: 'Group 2',
+    collapsible: false,
+    initiallyOpen: true,
+    filters: {
+      'Status at Tsumeb': 'checkboxes',
+      Occurence: 'dropdown',
+      'Precursor Mineral': 'dropdown',
+    },
   },
-  Occurence: {
-    type: 'dropdown',
-    label: 'Paragenesis',
-  },
-  'Precursor Mineral': 'dropdown',
-}
+]
 
 const abundanceSortList = ['Very rare', 'Extremely rare', 'Very common', 'Common']
 const sortedTabList = ['Species', 'Specimen', 'Pseudomorph']
