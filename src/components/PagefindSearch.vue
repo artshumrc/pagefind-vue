@@ -67,7 +67,7 @@
       </Filters>
 
       <Results
-        v-if="mounted && !useVirtualScrolling"
+        v-if="mounted"
         :page-results="pageResults"
         :results="results"
         :items-per-page="itemsPerPage"
@@ -81,19 +81,6 @@
           <slot name="result" :result="result" :search-query="searchQuery" />
         </template>
       </Results>
-
-      <VirtualSearchResults
-        v-else-if="mounted && useVirtualScrolling"
-        :results="results"
-        :total-results="totalResults"
-        :active-filters-text="activeFiltersText"
-        :items-per-page="itemsPerPage"
-        @perform-search="performSearch"
-      >
-        <template #result="{ result }">
-          <slot name="result" :result="result" :search-query="searchQuery" />
-        </template>
-      </VirtualSearchResults>
     </div>
   </div>
 </template>
@@ -147,7 +134,6 @@ function clearSortCache() {
 import Tabs from './Tabs.vue'
 import Filters from './SearchFilters.vue'
 import Results from './SearchResults.vue'
-import VirtualSearchResults from './VirtualSearchResults.vue'
 import MagnifyingGlass from './icons/MagnifyingGlass.vue'
 import type { FiltersDefinition, Filter, FilterGroup, ResultData, SortOption } from './types'
 
@@ -179,7 +165,6 @@ const props = withDefaults(
     showKeywordInput?: boolean
     checkboxFilterThreshold?: number
     filtersTitle?: string
-    useVirtualScrolling?: boolean
     searchDebounceMs?: number
   }>(),
   {
@@ -187,7 +172,6 @@ const props = withDefaults(
     itemsPerPage: 10,
     checkboxFilterThreshold: 8,
     filtersTitle: 'Filters',
-    useVirtualScrolling: false,
     searchDebounceMs: 300,
   },
 )
@@ -206,8 +190,7 @@ const selectedFilters = ref<{ [key: string]: string[] }>({})
 // Store per-tab filters
 const tabFilters = ref<{ [tabValue: string]: { [key: string]: string[] } }>({})
 const showKeywordInput = props.showKeywordInput
-// Destructure useVirtualScrolling for template
-const useVirtualScrolling = props.useVirtualScrolling
+
 const isInitializing = ref(true)
 
 // Debounced search function for better performance with large datasets
@@ -560,12 +543,7 @@ const updateUrlParams = (page: number) => {
   window.history.replaceState({}, '', url)
 }
 
-// For virtual scrolling, we don't need to update page results
 const updateCurrentPageResults = async () => {
-  if (props.useVirtualScrolling) {
-    return // Skip for virtual scrolling
-  }
-
   if (!results.value) {
     pageResults.value = []
     return

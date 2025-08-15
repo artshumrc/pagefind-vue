@@ -32,14 +32,14 @@
 
     <input :id="`${name}_hidden_input`" type="hidden" :name="name" :value="modelValue" />
 
-    <!-- Virtualize options when exceeding threshold -->
-    <div v-show="showOptions">
-      <template v-if="filteredOptions.length === 0">
+    <!-- Use v-if instead of v-show for immediate DOM destruction during close -->
+    <div v-if="showOptions">
+      <template v-if="filteredOptionsLength === 0">
         <ul class="filterable-dropdown-options">
           <li class="filterable-dropdown-no-results">No matches found</li>
         </ul>
       </template>
-      <template v-else-if="filteredOptions.length <= virtualizationThreshold">
+      <template v-else>
         <ul
           :id="`${name}_ul`"
           ref="optionsListRef"
@@ -65,35 +65,6 @@
           </li>
         </ul>
       </template>
-      <template v-else>
-        <RecycleScroller
-          :items="filteredOptions"
-          :item-size="estimatedOptionHeight"
-          key-field="value"
-          class="filterable-dropdown-options"
-          role="listbox"
-          @focusin="handleVirtualScrollerFocusIn"
-          @focusout="handleVirtualScrollerFocusOut"
-        >
-          <template #default="{ item: option }">
-            <li :key="option.value">
-              <button
-                class="filterable-dropdown-option"
-                @mousedown.prevent
-                @click="handleOptionSelect(option)"
-                @keyup.down="navigateOptions('next', $event)"
-                @keyup.up="navigateOptions('prev', $event)"
-                role="option"
-                :aria-selected="isOptionSelected(option)"
-                :id="`${name}_option_${option.value}`"
-                :disabled="option.count === 0"
-              >
-                {{ option.label }} ({{ option.count }})
-              </button>
-            </li>
-          </template>
-        </RecycleScroller>
-      </template>
     </div>
 
     <div :id="`${name}_errors`"></div>
@@ -104,7 +75,7 @@
 import { ref, computed, watch, onMounted, onUnmounted, nextTick } from 'vue'
 import ChevronIcon from './icons/ChevronIcon.vue'
 import XIcon from './icons/XIcon.vue'
-import { RecycleScroller } from 'vue-virtual-scroller'
+
 import type { Option } from './types'
 
 const props = defineProps<{
@@ -132,12 +103,20 @@ const buttonCacheValid = ref(false)
 
 // Clear button cache when options change
 const clearButtonCache = () => {
+  if (!showOptions.value) {
+    return
+  }
+
   cachedOptionButtons.value = []
   buttonCacheValid.value = false
 }
 
 // Get cached button references or rebuild cache
 const getOptionButtons = (): HTMLButtonElement[] => {
+  if (!showOptions.value) {
+    return []
+  }
+
   if (buttonCacheValid.value && cachedOptionButtons.value.length > 0) {
     return cachedOptionButtons.value
   }
@@ -219,20 +198,53 @@ const removeKeyboardListeners = () => {
 }
 
 const isWithinOptionsArea = (element: Element | null): boolean => {
-  if (!element || !optionsListRef.value) return false
+  if (!showOptions.value || !element || !optionsListRef.value) {
+    return false
+  }
   return optionsListRef.value.contains(element)
 }
 
-// Virtualization settings for large option lists
-const virtualizationThreshold = 20
-const estimatedOptionHeight = 12
+// Debounce
+const debounce = <T extends (...args: any[]) => any>(
+  func: T,
+  wait: number,
+): T & { cancel: () => void } => {
+  let timeout: ReturnType<typeof setTimeout> | null = null
+
+  const debounced = ((...args: any[]) => {
+    if (timeout !== null) {
+      clearTimeout(timeout)
+    }
+    timeout = setTimeout(() => func(...args), wait)
+  }) as T & { cancel: () => void }
+
+  debounced.cancel = () => {
+    if (timeout !== null) {
+      clearTimeout(timeout)
+      timeout = null
+    }
+  }
+
+  return debounced
+}
 
 const displayValue = computed(() => searchText.value)
 
+// Optimized filteredOptions computed - skip expensive operations when dropdown is closed
 const filteredOptions = computed(() => {
+  // PERFORMANCE FIX: Skip computation when dropdown is closed to prevent cascade during teardown
+  if (!showOptions.value) {
+    return []
+  }
+
   const filter = searchText.value.toLowerCase()
   return props.options.filter((option) => option.label.toLowerCase().includes(filter))
 })
+
+// Cache filteredOptions length to avoid multiple evaluations in template
+const filteredOptionsLength = computed(() => filteredOptions.value.length)
+
+const debouncedClearCache = debounce(clearButtonCache, 16) // 16ms = ~1 frame at 60fps
 
 watch(
   [() => props.modelValue, () => props.options],
@@ -245,16 +257,14 @@ watch(
       searchText.value = ''
       isValid.value = false
     }
-    // Clear button cache when options change
-    clearButtonCache()
+    // Use debounced cache clearing to prevent cascade
+    debouncedClearCache()
   },
   { immediate: true },
 )
 
-// Clear button cache when filtered options change (for search)
-watch(filteredOptions, () => {
-  clearButtonCache()
-})
+// Debounce cache clearing when filtered options change
+watch(filteredOptions, debouncedClearCache)
 
 const handleInput = (event: Event) => {
   const input = event.target as HTMLInputElement
@@ -262,7 +272,8 @@ const handleInput = (event: Event) => {
   isValid.value = false
   showOptions.value = true
   addGlobalClickListener() // Add listener when dropdown opens
-  clearButtonCache() // Clear cache since filtered options will change
+  // Use debounced cache clearing during input to prevent excessive DOM queries
+  debouncedClearCache()
 }
 
 const handleFocus = () => {
@@ -283,7 +294,10 @@ const handleClick = () => {
 
 // Optimized focus management
 const isWithinComponent = (element: Element | null): boolean => {
-  return !!(element && containerRef.value?.contains(element))
+  if (!showOptions.value || !element || !containerRef.value) {
+    return false
+  }
+  return containerRef.value.contains(element)
 }
 
 const handleBlur = (event: FocusEvent) => {
@@ -328,22 +342,6 @@ const handleUlFocusOut = (event: FocusEvent) => {
 
   // Focus is leaving the options area
   isFocusWithinUl.value = false
-  removeKeyboardListeners()
-}
-
-// Handle focus events for virtual scroller
-const handleVirtualScrollerFocusIn = () => {
-  addKeyboardListeners()
-}
-
-const handleVirtualScrollerFocusOut = (event: FocusEvent) => {
-  const relatedTarget = event.relatedTarget as HTMLElement | null
-
-  // If focus is moving within the component, don't remove listeners
-  if (isWithinComponent(relatedTarget)) {
-    return
-  }
-
   removeKeyboardListeners()
 }
 
@@ -399,6 +397,10 @@ const handleOptionsKeydown = (event: KeyboardEvent) => {
 
       // Find the next focusable element after the component using simplified logic
       nextTick(() => {
+        if (!showOptions.value) {
+          return
+        }
+
         const focusableElements =
           'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
         const elements = Array.from(document.querySelectorAll(focusableElements))
@@ -452,6 +454,9 @@ const handleOptionsKeydown = (event: KeyboardEvent) => {
 const handleInputKeydown = (event: KeyboardEvent) => {
   if (event.key === 'ArrowDown') {
     event.preventDefault()
+    if (!showOptions.value) {
+      return
+    }
     // Ensure DOM is updated before focusing first button
     nextTick(() => {
       const buttons = getOptionButtons()
@@ -480,6 +485,10 @@ const validateInput = () => {
 const isOptionSelected = (option: Option) => option.value === props.modelValue
 
 const navigateOptions = (direction: 'next' | 'prev', event: KeyboardEvent) => {
+  if (!showOptions.value) {
+    return
+  }
+
   const buttons = getOptionButtons()
   const currentIndex = buttons.indexOf(event.target as HTMLButtonElement)
   let nextIndex
@@ -512,6 +521,7 @@ onUnmounted(() => {
   // Clean up all event listeners when component is destroyed
   removeGlobalClickListener()
   removeKeyboardListeners()
+  debouncedClearCache.cancel()
 })
 </script>
 
@@ -574,7 +584,6 @@ onUnmounted(() => {
   outline: none;
   border-radius: 0;
   box-shadow: none;
-  /* Ensure consistent height: fixing display for virtualization */
   min-height: 28px;
   box-sizing: border-box;
   display: flex;
