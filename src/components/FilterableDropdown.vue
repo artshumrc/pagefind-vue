@@ -144,8 +144,14 @@ const addGlobalClickListener = () => {
     const target = event.target as HTMLElement
     // Don't close if clicking inside the component
     if (!isWithinComponent(target)) {
+      isClosing.value = true
+
       showOptions.value = false
       validateInput()
+
+      nextTick(() => {
+        isClosing.value = false
+      })
     }
   }
 
@@ -230,19 +236,64 @@ const debounce = <T extends (...args: any[]) => any>(
 
 const displayValue = computed(() => searchText.value)
 
-// Optimized filteredOptions computed - skip expensive operations when dropdown is closed
+// Cached filtered options to prevent expensive recalculation during teardown
+const cachedFilteredOptions = ref<Option[]>([])
+const lastFilterText = ref('')
+const lastOptionsLength = ref(0)
+const isClosing = ref(false)
+
 const filteredOptions = computed(() => {
-  // PERFORMANCE FIX: Skip computation when dropdown is closed to prevent cascade during teardown
-  if (!showOptions.value) {
-    return []
+  if (!showOptions.value || isClosing.value) {
+    return cachedFilteredOptions.value.length > 0 ? cachedFilteredOptions.value : []
   }
 
-  const filter = searchText.value.toLowerCase()
-  return props.options.filter((option) => option.label.toLowerCase().includes(filter))
+  const currentFilter = searchText.value.toLowerCase()
+  const currentOptionsLength = props.options.length
+
+  if (
+    currentFilter === lastFilterText.value &&
+    currentOptionsLength === lastOptionsLength.value &&
+    cachedFilteredOptions.value.length > 0
+  ) {
+    return cachedFilteredOptions.value
+  }
+
+  // Only perform expensive filtering when actually needed and dropdown is open
+  let filtered: Option[]
+
+  // PERFORMANCE FIX: For large datasets, use more efficient filtering
+  if (props.options.length > 1000) {
+    // Skip toLowerCase() calls for exact matches
+    if (!currentFilter) {
+      filtered = props.options
+    } else {
+      filtered = []
+      for (let i = 0; i < props.options.length; i++) {
+        const option = props.options[i]
+        if (option.label.toLowerCase().includes(currentFilter)) {
+          filtered.push(option)
+        }
+      }
+    }
+  } else {
+    filtered = props.options.filter((option) => option.label.toLowerCase().includes(currentFilter))
+  }
+
+  // Cache the results and inputs for next comparison
+  cachedFilteredOptions.value = filtered
+  lastFilterText.value = currentFilter
+  lastOptionsLength.value = currentOptionsLength
+
+  return filtered
 })
 
 // Cache filteredOptions length to avoid multiple evaluations in template
-const filteredOptionsLength = computed(() => filteredOptions.value.length)
+const filteredOptionsLength = computed(() => {
+  if (!showOptions.value || isClosing.value) {
+    return 0
+  }
+  return filteredOptions.value.length
+})
 
 const debouncedClearCache = debounce(clearButtonCache, 16) // 16ms = ~1 frame at 60fps
 
@@ -257,14 +308,18 @@ watch(
       searchText.value = ''
       isValid.value = false
     }
-    // Use debounced cache clearing to prevent cascade
-    debouncedClearCache()
+    if (showOptions.value) {
+      debouncedClearCache()
+    }
   },
   { immediate: true },
 )
 
-// Debounce cache clearing when filtered options change
-watch(filteredOptions, debouncedClearCache)
+watch(filteredOptions, () => {
+  if (showOptions.value) {
+    debouncedClearCache()
+  }
+})
 
 const handleInput = (event: Event) => {
   const input = event.target as HTMLInputElement
@@ -309,6 +364,8 @@ const handleBlur = (event: FocusEvent) => {
     return
   }
 
+  isClosing.value = true
+
   // Focus is moving outside component - restore display value and close
   if (showOptions.value) {
     const selectedOption = props.options.find((opt) => opt.value === props.modelValue)
@@ -323,7 +380,29 @@ const handleBlur = (event: FocusEvent) => {
   removeGlobalClickListener()
   removeKeyboardListeners() // Remove keyboard listeners when dropdown closes
   validateInput()
+
+  // Reset closing flag after a tick to allow reopening
+  nextTick(() => {
+    isClosing.value = false
+  })
 }
+
+if (showOptions.value) {
+  const selectedOption = props.options.find((opt) => opt.value === props.modelValue)
+  if (selectedOption) {
+    searchText.value = selectedOption.label
+  } else {
+    searchText.value = ''
+  }
+}
+
+showOptions.value = false
+
+nextTick(() => {
+  removeGlobalClickListener()
+  removeKeyboardListeners() // Remove keyboard listeners when dropdown closes
+  validateInput()
+})
 
 const handleUlFocusIn = () => {
   isFocusWithinUl.value = true
@@ -346,9 +425,15 @@ const handleUlFocusOut = (event: FocusEvent) => {
 }
 
 const handleEscape = () => {
+  isClosing.value = true
+
   showOptions.value = false
   removeGlobalClickListener() // Remove listener when dropdown closes
   removeKeyboardListeners() // Remove keyboard listeners when dropdown closes
+
+  nextTick(() => {
+    isClosing.value = false
+  })
 }
 
 const handleOptionSelect = (option: Option) => {
@@ -358,12 +443,16 @@ const handleOptionSelect = (option: Option) => {
   searchText.value = option.label
   validateInput()
 
+  isClosing.value = true
+
   // Close dropdown and focus input using nextTick for proper timing
   nextTick(() => {
     showOptions.value = false
     removeGlobalClickListener()
     removeKeyboardListeners() // Remove keyboard listeners when dropdown closes
     visibleInput.value?.focus()
+
+    isClosing.value = false
   })
 }
 
@@ -384,6 +473,9 @@ const handleOptionsKeydown = (event: KeyboardEvent) => {
     // Only handle tab specially if we have a selection
     if (props.modelValue) {
       event.preventDefault()
+
+      isClosing.value = true
+
       showOptions.value = false
       removeGlobalClickListener()
       removeKeyboardListeners() // Remove keyboard listeners when dropdown closes
@@ -392,6 +484,9 @@ const handleOptionsKeydown = (event: KeyboardEvent) => {
       // If shift+tab, focus the input
       if (event.shiftKey) {
         visibleInput.value?.focus()
+        nextTick(() => {
+          isClosing.value = false
+        })
         return
       }
 
@@ -412,6 +507,8 @@ const handleOptionsKeydown = (event: KeyboardEvent) => {
         if (nextElement instanceof HTMLElement) {
           nextElement.focus()
         }
+
+        isClosing.value = false
       })
     } else {
       // If no selection, let tab behave normally
@@ -420,10 +517,16 @@ const handleOptionsKeydown = (event: KeyboardEvent) => {
       const currentButton = event.target as HTMLButtonElement
 
       if (currentButton === buttons[buttons.length - 1] && !event.shiftKey) {
+        isClosing.value = true
+
         showOptions.value = false
         removeGlobalClickListener()
         removeKeyboardListeners() // Remove keyboard listeners when dropdown closes
         validateInput()
+
+        nextTick(() => {
+          isClosing.value = false
+        })
       }
     }
   }
@@ -506,11 +609,18 @@ const clearSelection = () => {
   emit('update:modelValue', '')
   searchText.value = ''
   isValid.value = true
+
+  isClosing.value = true
+
   showOptions.value = false
   removeGlobalClickListener() // Remove listener when dropdown closes
   removeKeyboardListeners() // Remove keyboard listeners when dropdown closes
   validateInput()
   visibleInput.value?.focus()
+
+  nextTick(() => {
+    isClosing.value = false
+  })
 }
 
 onMounted(() => {
@@ -522,6 +632,10 @@ onUnmounted(() => {
   removeGlobalClickListener()
   removeKeyboardListeners()
   debouncedClearCache.cancel()
+
+  cachedFilteredOptions.value = []
+  cachedOptionButtons.value = []
+  isClosing.value = false
 })
 </script>
 

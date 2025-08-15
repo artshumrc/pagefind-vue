@@ -582,8 +582,15 @@ const updateCurrentPageResults = async () => {
 const updateFiltersAndResults = async (searchResults: any) => {
   results.value = searchResults.results
   totalResults.value = searchResults.total
-  filters.value = searchResults.filters // Add this line to update filters
-  clearSortCache() // Clear memoization cache when filter data changes
+
+  // Only clear cache if filters actually changed
+  const filtersChanged = JSON.stringify(filters.value) !== JSON.stringify(searchResults.filters)
+  filters.value = searchResults.filters
+
+  if (filtersChanged) {
+    clearSortCache() // Clear memoization cache only when filter data actually changes
+  }
+
   await updateCurrentPageResults()
 }
 
@@ -637,6 +644,9 @@ const clearSearch = async () => {
  * When any filter is updated, this function is called.
  */
 const handleFilterUpdate = (group: string, value: string) => {
+  // Store previous state to prevent unnecessary searches
+  const previousValue = selectedFilters.value[group]?.slice() || []
+
   // If using tabs, only allow filters for the current tab
   if (props.tabbedFilter && group === props.tabbedFilter) {
     selectedFilters.value[group] = [value]
@@ -666,7 +676,15 @@ const handleFilterUpdate = (group: string, value: string) => {
     }
   }
 
-  performSearch(searchQuery.value)
+  // Only perform search if the filter actually changed
+  const currentValue = selectedFilters.value[group] || []
+  const hasChanged =
+    previousValue.length !== currentValue.length ||
+    !previousValue.every((val) => currentValue.includes(val))
+
+  if (hasChanged) {
+    performSearch(searchQuery.value)
+  }
 }
 
 async function performSearch(query: string | null, isInitialLoad: boolean = false) {
@@ -708,8 +726,12 @@ async function performSearch(query: string | null, isInitialLoad: boolean = fals
       await updateCurrentPageResults()
 
       // Update filters after results for better perceived performance
+      const filtersChanged = JSON.stringify(filters.value) !== JSON.stringify(searchResults.filters)
       filters.value = searchResults.filters
-      clearSortCache() // Clear memoization cache when filter data changes
+
+      if (filtersChanged) {
+        clearSortCache() // Clear memoization cache only when filter data actually changes
+      }
     } else {
       // Standard update for smaller result sets
       await updateFiltersAndResults(searchResults)
