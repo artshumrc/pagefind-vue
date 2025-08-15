@@ -67,7 +67,7 @@
       </Filters>
 
       <Results
-        v-if="mounted"
+        v-if="mounted && !useVirtualScrolling"
         :page-results="pageResults"
         :results="results"
         :items-per-page="itemsPerPage"
@@ -78,20 +78,90 @@
         @perform-search="performSearch"
       >
         <template #result="{ result }">
-          <slot name="result" :result="result" />
+          <slot name="result" :result="result" :search-query="searchQuery" />
         </template>
       </Results>
+
+      <VirtualSearchResults
+        v-else-if="mounted && useVirtualScrolling"
+        :results="results"
+        :total-results="totalResults"
+        :active-filters-text="activeFiltersText"
+        :items-per-page="itemsPerPage"
+        @perform-search="performSearch"
+      >
+        <template #result="{ result }">
+          <slot name="result" :result="result" :search-query="searchQuery" />
+        </template>
+      </VirtualSearchResults>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
 import { ref, onMounted, computed, watch, nextTick } from 'vue'
+
+// Memoization cache for sorted filter options
+const sortedFilterCache = new Map<string, { [key: string]: number }>()
+const sortCacheKeys = new Map<string, string>()
+
+function createSortCacheKey(
+  groupName: string,
+  group: Record<string, number>,
+  sortFunctionName: string,
+): string {
+  // Create a dumb hash of the group data and sort function
+  const groupKeys = Object.keys(group).sort().join(',')
+  const groupValues = Object.keys(group)
+    .sort()
+    .map((k) => group[k])
+    .join(',')
+  return `${groupName}:${sortFunctionName}:${groupKeys}:${groupValues}`
+}
+
+function getMemoizedSortedGroup(
+  groupName: string,
+  group: Record<string, number>,
+  sortFunction: (a: [string, number], b: [string, number]) => number,
+): { [key: string]: number } {
+  const sortFunctionName = sortFunction.name || 'anonymous'
+  const cacheKey = createSortCacheKey(groupName, group, sortFunctionName)
+
+  const existingCacheKey = sortCacheKeys.get(groupName)
+  if (existingCacheKey === cacheKey && sortedFilterCache.has(groupName)) {
+    return sortedFilterCache.get(groupName)!
+  }
+
+  const sortedGroup = Object.fromEntries(Object.entries(group).sort(sortFunction))
+  sortedFilterCache.set(groupName, sortedGroup)
+  sortCacheKeys.set(groupName, cacheKey)
+
+  return sortedGroup
+}
+
+function clearSortCache() {
+  sortedFilterCache.clear()
+  sortCacheKeys.clear()
+}
+
 import Tabs from './Tabs.vue'
 import Filters from './SearchFilters.vue'
 import Results from './SearchResults.vue'
+import VirtualSearchResults from './VirtualSearchResults.vue'
 import MagnifyingGlass from './icons/MagnifyingGlass.vue'
 import type { FiltersDefinition, Filter, FilterGroup, ResultData, SortOption } from './types'
+
+// Debounce utility for search optimization
+function debounce<T extends (...args: any[]) => any>(
+  func: T,
+  delay: number,
+): (...args: Parameters<T>) => void {
+  let timeoutId: ReturnType<typeof setTimeout>
+  return (...args: Parameters<T>) => {
+    clearTimeout(timeoutId)
+    timeoutId = setTimeout(() => func(...args), delay)
+  }
+}
 
 const props = withDefaults(
   defineProps<{
@@ -109,12 +179,16 @@ const props = withDefaults(
     showKeywordInput?: boolean
     checkboxFilterThreshold?: number
     filtersTitle?: string
+    useVirtualScrolling?: boolean
+    searchDebounceMs?: number
   }>(),
   {
     showKeywordInput: true,
     itemsPerPage: 10,
     checkboxFilterThreshold: 8,
     filtersTitle: 'Filters',
+    useVirtualScrolling: false,
+    searchDebounceMs: 300,
   },
 )
 
@@ -132,7 +206,14 @@ const selectedFilters = ref<{ [key: string]: string[] }>({})
 // Store per-tab filters
 const tabFilters = ref<{ [tabValue: string]: { [key: string]: string[] } }>({})
 const showKeywordInput = props.showKeywordInput
+// Destructure useVirtualScrolling for template
+const useVirtualScrolling = props.useVirtualScrolling
 const isInitializing = ref(true)
+
+// Debounced search function for better performance with large datasets
+const debouncedSearch = debounce(async (query: string | null) => {
+  await performSearch(query)
+}, props.searchDebounceMs) // Configurable delay
 
 const emit = defineEmits(['update:searchQuery'])
 
@@ -140,6 +221,7 @@ onMounted(async () => {
   if (props.pagefind) {
     const initialFilters = await props.pagefind.filters()
     filters.value = initialFilters
+    clearSortCache() // Clear cache on initial load
   }
 
   const searchParams = new URLSearchParams(window.location.search)
@@ -304,11 +386,10 @@ const filteredKeywordFilters = computed(() => {
     })
   }
 
-  // Finally, sort the filter options
   let f = Object.fromEntries(
     filteredByKey.map(([key, group]) => [
       key,
-      Object.fromEntries(Object.entries(group).sort(customSort(key))),
+      getMemoizedSortedGroup(key, group as Record<string, number>, customSort(key)),
     ]),
   )
   return f
@@ -411,7 +492,8 @@ watch(searchQuery, async (newQuery) => {
   currentPage.value = 1 // reset to first page on new search
   emit('update:searchQuery', newQuery)
   await nextTick() // wait for any changes to sort type, etc before searching
-  await performSearch(newQuery || null)
+
+  debouncedSearch(newQuery || null)
 })
 
 watch(
@@ -478,7 +560,12 @@ const updateUrlParams = (page: number) => {
   window.history.replaceState({}, '', url)
 }
 
-async function updateCurrentPageResults() {
+// For virtual scrolling, we don't need to update page results
+const updateCurrentPageResults = async () => {
+  if (props.useVirtualScrolling) {
+    return // Skip for virtual scrolling
+  }
+
   if (!results.value) {
     pageResults.value = []
     return
@@ -487,11 +574,27 @@ async function updateCurrentPageResults() {
   const start = (currentPage.value - 1) * itemsPerPage
   const end = start + itemsPerPage
 
-  // have to await each result to get data, so only await the page results for better performance
+  // Lazy load results only when needed, with error handling
   const newPageResults = results.value.slice(start, end)
-  const processed = await Promise.all(newPageResults.map((result) => result.data()))
 
-  pageResults.value = processed
+  try {
+    // Use Promise.allSettled to handle individual failures a little more gracefully
+    const settledResults = await Promise.allSettled(newPageResults.map((result) => result.data()))
+
+    const processed = settledResults.map((result, index) => {
+      if (result.status === 'fulfilled') {
+        return result.value
+      } else {
+        console.warn(`Failed to load result ${index}:`, result.reason)
+        return null
+      }
+    })
+
+    pageResults.value = processed
+  } catch (error) {
+    console.error('Error loading page results:', error)
+    pageResults.value = []
+  }
 }
 
 /**
@@ -502,6 +605,7 @@ const updateFiltersAndResults = async (searchResults: any) => {
   results.value = searchResults.results
   totalResults.value = searchResults.total
   filters.value = searchResults.filters // Add this line to update filters
+  clearSortCache() // Clear memoization cache when filter data changes
   await updateCurrentPageResults()
 }
 
@@ -591,6 +695,11 @@ async function performSearch(query: string | null, isInitialLoad: boolean = fals
   console.log('Performing search with query:', query)
   if (!props.pagefind) return
 
+  // Show loading state for large datasets
+  if (!isInitialLoad && results.value.length > 1000) {
+    pageResults.value = [] // Clear current results to show loading
+  }
+
   try {
     const searchFilters = getSearchFilters()
 
@@ -612,6 +721,22 @@ async function performSearch(query: string | null, isInitialLoad: boolean = fals
         return { results: [], filters: {}, total: 0 }
       })
 
+    // For large result sets, prioritize updating UI quickly
+    if (searchResults.total > 5000) {
+      // Update results first for immediate feedback
+      results.value = searchResults.results
+      totalResults.value = searchResults.total
+
+      await updateCurrentPageResults()
+
+      // Update filters after results for better perceived performance
+      filters.value = searchResults.filters
+      clearSortCache() // Clear memoization cache when filter data changes
+    } else {
+      // Standard update for smaller result sets
+      await updateFiltersAndResults(searchResults)
+    }
+
     // Calculate tab counts if needed
     if (props.tabbedFilter) {
       // Perform secondary search without tab filter
@@ -628,17 +753,12 @@ async function performSearch(query: string | null, isInitialLoad: boolean = fals
           return { filters: {} }
         })
 
-      // Update UI with results
-      await updateFiltersAndResults(searchResults)
       calculateTabCounts(searchMinusTab.filters)
 
       // Handle tab selection
       if (!activeTab.value && tabs.value.length > 0) {
         activeTab.value = props.defaultTab || tabs.value[0].value
       }
-    } else {
-      // Update UI with results for non-tabbed search
-      await updateFiltersAndResults(searchResults)
     }
   } catch (error) {
     console.error('Search failed:', error)
@@ -729,7 +849,7 @@ defineExpose({
   --pagefind-vue-options-border: 1px solid #ccc;
   --pagefind-vue-options-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
   --pagefind-vue-option-text-align: left;
-  --pagefind-vue-option-padding: 0.4rem;
+  --pagefind-vue-option-padding: 0.25rem 0.5rem; /* Reduced vertical padding */
   --pagefind-vue-option-color: black;
   --pagefind-vue-option-font-size: 1rem;
   --pagefind-vue-option-hover-bg: #b6b6b6;
