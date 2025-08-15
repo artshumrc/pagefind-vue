@@ -18,19 +18,7 @@
       <h2 style="padding: 0; margin: 0">
         {{ label }}
         <span class="collapse-icon">
-          <svg
-            class="chevron-icon"
-            xmlns="http://www.w3.org/2000/svg"
-            width="22"
-            height="22"
-            fill="currentColor"
-            viewBox="0 0 256 256"
-            :direction="direction"
-          >
-            <path
-              d="M213.66,101.66l-80,80a8,8,0,0,1-11.32,0l-80-80A8,8,0,0,1,53.66,90.34L128,164.69l74.34-74.35a8,8,0,0,1,11.32,11.32Z"
-            ></path>
-          </svg>
+          <ChevronIcon :direction="direction as 'up' | 'down' | 'left' | 'right'" size="22" />
         </span>
       </h2>
     </template>
@@ -40,6 +28,7 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
 import Search from './components/PagefindSearch.vue'
+import ChevronIcon from './components/icons/ChevronIcon.vue'
 import type {
   FilterSortFunction as FilterOptionsSortFunction,
   CustomSortFunctions,
