@@ -25,7 +25,7 @@ import type { FilterGroup } from './components/types'
 
 let pagefindPath: string
 if (import.meta.env.PROD) {
-  pagefindPath = new URL('/pagefind/pagefind.js', import.meta.url).href
+  pagefindPath = new URL('/pagefind-amend/pagefind.js', import.meta.url).href
 } else {
   pagefindPath = '../../fixtures/pagefind-amend/pagefind.js' // this needs to be the path relative from the file it is actually imported
 }
