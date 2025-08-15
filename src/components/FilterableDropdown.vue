@@ -239,8 +239,24 @@ const displayValue = computed(() => searchText.value)
 // Cached filtered options to prevent expensive recalculation during teardown
 const cachedFilteredOptions = ref<Option[]>([])
 const lastFilterText = ref('')
-const lastOptionsLength = ref(0)
+const lastOptionsHash = ref('')
 const isClosing = ref(false)
+
+const generateOptionsHash = (options: Option[]): string => {
+  if (options.length > 5000) {
+    // Sample every 10th option plus first/last to detect changes efficiently
+    const sample = options.filter(
+      (_, index) => index % 10 === 0 || index === 0 || index === options.length - 1,
+    )
+    return (
+      sample.map((option) => `${option.value}:${option.count}`).join('|') +
+      `|length:${options.length}`
+    )
+  }
+
+  // For smaller datasets, hash all options
+  return options.map((option) => `${option.value}:${option.count}`).join('|')
+}
 
 const filteredOptions = computed(() => {
   if (!showOptions.value || isClosing.value) {
@@ -248,20 +264,18 @@ const filteredOptions = computed(() => {
   }
 
   const currentFilter = searchText.value.toLowerCase()
-  const currentOptionsLength = props.options.length
+  const currentOptionsHash = generateOptionsHash(props.options)
 
   if (
     currentFilter === lastFilterText.value &&
-    currentOptionsLength === lastOptionsLength.value &&
+    currentOptionsHash === lastOptionsHash.value &&
     cachedFilteredOptions.value.length > 0
   ) {
     return cachedFilteredOptions.value
   }
 
-  // Only perform expensive filtering when actually needed and dropdown is open
   let filtered: Option[]
 
-  // PERFORMANCE FIX: For large datasets, use more efficient filtering
   if (props.options.length > 1000) {
     // Skip toLowerCase() calls for exact matches
     if (!currentFilter) {
@@ -282,7 +296,7 @@ const filteredOptions = computed(() => {
   // Cache the results and inputs for next comparison
   cachedFilteredOptions.value = filtered
   lastFilterText.value = currentFilter
-  lastOptionsLength.value = currentOptionsLength
+  lastOptionsHash.value = currentOptionsHash
 
   return filtered
 })
@@ -296,6 +310,17 @@ const filteredOptionsLength = computed(() => {
 })
 
 const debouncedClearCache = debounce(clearButtonCache, 16) // 16ms = ~1 frame at 60fps
+
+watch(
+  () => props.options,
+  () => {
+    // Clear the options cache immediately when props.options changes
+    // This ensures facet count updates are reflected immediately
+    cachedFilteredOptions.value = []
+    lastOptionsHash.value = ''
+  },
+  { deep: false }, // Shallow watch is sufficient since we're checking content hash
+)
 
 watch(
   [() => props.modelValue, () => props.options],
@@ -635,6 +660,7 @@ onUnmounted(() => {
 
   cachedFilteredOptions.value = []
   cachedOptionButtons.value = []
+  lastOptionsHash.value = ''
   isClosing.value = false
 })
 </script>
