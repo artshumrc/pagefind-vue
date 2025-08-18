@@ -11,7 +11,10 @@
           <div class="input-wrapper">
             <label for="search" class="visually-hidden">Search</label>
             <div class="search-input-container">
-              <MagnifyingGlass class="search-icon" size="24" color="#666" />
+              <MagnifyingGlass v-if="!isSearching" class="search-icon" size="24" color="#666" />
+              <div v-if="isSearching" class="search-loading-indicator">
+                <div class="loading-spinner"></div>
+              </div>
               <input
                 id="search"
                 name="search"
@@ -192,6 +195,7 @@ const tabFilters = ref<{ [tabValue: string]: { [key: string]: string[] } }>({})
 const showKeywordInput = props.showKeywordInput
 
 const isInitializing = ref(true)
+const isSearching = ref(false)
 
 // Debounced search function for better performance with large datasets
 const debouncedSearch = debounce(async (query: string | null) => {
@@ -474,6 +478,13 @@ watch(searchQuery, async (newQuery) => {
 
   currentPage.value = 1 // reset to first page on new search
   emit('update:searchQuery', newQuery)
+
+  if (newQuery.trim() !== '') {
+    isSearching.value = true
+  } else {
+    isSearching.value = false
+  }
+
   await nextTick() // wait for any changes to sort type, etc before searching
 
   debouncedSearch(newQuery || null)
@@ -688,8 +699,13 @@ const handleFilterUpdate = (group: string, value: string) => {
 }
 
 async function performSearch(query: string | null, isInitialLoad: boolean = false) {
-  console.log('Performing search with query:', query)
   if (!props.pagefind) return
+
+  // Set loading state for non-debounced calls (like filter updates, tab changes, etc.)
+  // Don't override loading state that might already be set by input watcher
+  if (!isInitialLoad && !isSearching.value) {
+    isSearching.value = true
+  }
 
   // Show loading state for large datasets
   if (!isInitialLoad && results.value.length > 1000) {
@@ -765,6 +781,11 @@ async function performSearch(query: string | null, isInitialLoad: boolean = fals
     results.value = []
     pageResults.value = []
     totalResults.value = 0
+  } finally {
+    // Always clear loading state for non-initial loads
+    if (!isInitialLoad) {
+      isSearching.value = false
+    }
   }
 }
 
@@ -831,6 +852,9 @@ defineExpose({
   clearSearch,
   mounted,
   isInitializing,
+  isSearching,
+  handleFilterUpdate,
+  performSearch,
 })
 </script>
 
@@ -856,6 +880,10 @@ defineExpose({
   --pagefind-vue-option-selected-bg: #c1ffbe;
   --pagefind-vue-option-disabled-bg: #f5f5f5;
   --pagefind-vue-no-results-font-style: italic;
+  --pagefind-vue-loading-spinner-size: 20px;
+  --pagefind-vue-loading-spinner-border: 2px;
+  --pagefind-vue-loading-spinner-color: #007bff;
+  --pagefind-vue-loading-spinner-bg: #f3f3f3;
 }
 </style>
 
@@ -1050,6 +1078,35 @@ button {
 
 #results-list mark {
   color: black;
+}
+
+.search-loading-indicator {
+  position: absolute;
+  left: 0.75rem;
+  top: 50%;
+  transform: translateY(-50%);
+  display: flex;
+  align-items: center;
+  z-index: 2;
+}
+
+.loading-spinner {
+  width: var(--pagefind-vue-loading-spinner-size);
+  height: var(--pagefind-vue-loading-spinner-size);
+  border: var(--pagefind-vue-loading-spinner-border) solid var(--pagefind-vue-loading-spinner-bg);
+  border-top: var(--pagefind-vue-loading-spinner-border) solid
+    var(--pagefind-vue-loading-spinner-color);
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
 }
 
 @media (max-width: 768px) {

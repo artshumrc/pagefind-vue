@@ -1,6 +1,11 @@
 <template>
   <div v-if="!pagefind" class="loading">Loading search...</div>
-  <Search v-else :pagefind="pagefind" :filters-definition="filtersDefinition">
+  <Search
+    v-else
+    :pagefind="pagefind"
+    :filters-definition="filtersDefinition"
+    :search-debounce-ms="500"
+  >
     <template #collapse-title="{ direction, label }">
       <h2 style="padding: 0; margin: 0">
         {{ label }}
