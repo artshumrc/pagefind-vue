@@ -725,8 +725,6 @@ const clearSearch = async () => {
   results.value = []
   tabFilters.value = {}
 
-  clearSearchCache()
-
   // Clear URL parameters
   const url = new URL(window.location.href)
   url.searchParams.forEach((_, key) => {
@@ -740,8 +738,9 @@ const clearSearch = async () => {
     ;(input as HTMLInputElement).value = ''
   })
 
-  // Wait for state updates befure updating results or else the Pagination component state will not be updated
+  // Wait for state updates before updating results or else the Pagination component state will not be updated
   await nextTick()
+  // Use normal performSearch to leverage caching - this will use cached null search if available
   await performSearch(null)
 }
 
@@ -795,7 +794,11 @@ const handleFilterUpdate = (group: string, value: string) => {
   }
 }
 
-async function performSearch(query: string | null, isInitialLoad: boolean = false) {
+async function performSearch(
+  query: string | null,
+  isInitialLoad: boolean = false,
+  skipCache: boolean = false,
+) {
   if (!props.pagefind) return
 
   // Set loading state for non-debounced calls (like filter updates, tab changes, etc.)
@@ -811,40 +814,43 @@ async function performSearch(query: string | null, isInitialLoad: boolean = fals
     // Create cache key for main search
     const mainCacheKey = createSearchCacheKey(query, searchFilters, desiredSort)
 
-    // Check cache first
-    const cachedResult = getCachedSearchResult(mainCacheKey)
+    // Check cache first (unless skipping cache)
+    if (!skipCache) {
+      const cachedResult = getCachedSearchResult(mainCacheKey)
 
-    if (cachedResult) {
-      // Use cached results for immediate response
-      results.value = cachedResult.results
-      totalResults.value = cachedResult.total
+      if (cachedResult) {
+        // Use cached results for immediate response
+        results.value = cachedResult.results
+        totalResults.value = cachedResult.total
 
-      // Only update filters if they changed to avoid unnecessary sort cache clearing
-      const filtersChanged = JSON.stringify(filters.value) !== JSON.stringify(cachedResult.filters)
-      if (filtersChanged) {
-        filters.value = cachedResult.filters
-        clearSortCache() // Clear memoization cache only when filter data actually changes
-      }
-
-      await updateCurrentPageResults()
-
-      // Handle tabs if needed and if we have cached tab counts
-      if (props.tabbedFilter && cachedResult.tabCounts) {
-        calculateTabCountsFromCache(cachedResult.tabCounts)
-
-        if (!activeTab.value && tabs.value.length > 0) {
-          activeTab.value = props.defaultTab || tabs.value[0].value
+        // Only update filters if they changed to avoid unnecessary sort cache clearing
+        const filtersChanged =
+          JSON.stringify(filters.value) !== JSON.stringify(cachedResult.filters)
+        if (filtersChanged) {
+          filters.value = cachedResult.filters
+          clearSortCache() // Clear memoization cache only when filter data actually changes
         }
-      } else if (props.tabbedFilter) {
-        // Need to calculate tab counts separately if not cached
-        await calculateTabCountsAsync(query, searchFilters)
-      }
 
-      if (!isInitialLoad) {
-        updateUrlParams(currentPage.value)
-      }
+        await updateCurrentPageResults()
 
-      return
+        // Handle tabs if needed and if we have cached tab counts
+        if (props.tabbedFilter && cachedResult.tabCounts) {
+          calculateTabCountsFromCache(cachedResult.tabCounts)
+
+          if (!activeTab.value && tabs.value.length > 0) {
+            activeTab.value = props.defaultTab || tabs.value[0].value
+          }
+        } else if (props.tabbedFilter) {
+          // Need to calculate tab counts separately if not cached
+          await calculateTabCountsAsync(query, searchFilters)
+        }
+
+        if (!isInitialLoad) {
+          updateUrlParams(currentPage.value)
+        }
+
+        return
+      }
     }
 
     // Show loading state for large datasets when not using cache
@@ -906,12 +912,14 @@ async function performSearch(query: string | null, isInitialLoad: boolean = fals
         tabCountsForCache = searchMinusTab.filters[props.tabbedFilter] || {}
         calculateTabCounts(searchMinusTab.filters)
 
-        setCachedSearchResult(tabCacheKey, {
-          results: searchMinusTab.results || [],
-          filters: searchMinusTab.filters || {},
-          total: searchMinusTab.total || 0,
-          timestamp: Date.now(),
-        })
+        if (!skipCache) {
+          setCachedSearchResult(tabCacheKey, {
+            results: searchMinusTab.results || [],
+            filters: searchMinusTab.filters || {},
+            total: searchMinusTab.total || 0,
+            timestamp: Date.now(),
+          })
+        }
       }
 
       // Handle tab selection
@@ -922,8 +930,10 @@ async function performSearch(query: string | null, isInitialLoad: boolean = fals
       cacheEntry.tabCounts = tabCountsForCache
     }
 
-    // Cache the main search result
-    setCachedSearchResult(mainCacheKey, cacheEntry)
+    // Cache the main search result (unless skipping cache)
+    if (!skipCache) {
+      setCachedSearchResult(mainCacheKey, cacheEntry)
+    }
 
     // For large result sets, prioritize updating UI quickly
     if (searchResults.total > 5000) {

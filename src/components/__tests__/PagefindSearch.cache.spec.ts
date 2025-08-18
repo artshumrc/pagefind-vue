@@ -350,4 +350,50 @@ describe('PagefindSearch caching system', () => {
     const callCount = mockPagefind.search.mock.calls.length
     expect(callCount).toBeLessThanOrEqual(1) // Should be 0 if cached, 1 if not
   })
+
+  it('should use cached null search when using clearSearch', async () => {
+    const wrapper = mount(PagefindSearch, {
+      props: {
+        pagefind: mockPagefind,
+        enableCache: true,
+      },
+      global: {
+        stubs: {
+          Filters: true,
+          Results: true,
+          Tabs: true,
+        },
+      },
+    })
+
+    await nextTick()
+    const vm = wrapper.vm as any
+
+    // Reset call count after mounting (which performs initial null search)
+    mockPagefind.search.mockClear()
+
+    // Perform an initial search to add more entries to cache
+    await vm.performSearch('initial search')
+    expect(mockPagefind.search).toHaveBeenCalledTimes(1)
+
+    // Verify cache has content (should include both null search and 'initial search')
+    const statsBeforeClearing = vm.getCacheStats()
+    expect(statsBeforeClearing.size).toBeGreaterThan(1)
+
+    // Clear search should reuse cached null search results, not clear the cache
+    mockPagefind.search.mockClear()
+    await vm.clearSearch()
+
+    // clearSearch should not have called pagefind.search since it reuses cached null results
+    expect(mockPagefind.search).toHaveBeenCalledTimes(0)
+
+    // Verify cache still has content (should not have been cleared)
+    const statsAfterClearing = vm.getCacheStats()
+    expect(statsAfterClearing.size).toBeGreaterThan(0)
+
+    // Perform the same empty search again - should also use cache
+    mockPagefind.search.mockClear()
+    await vm.performSearch(null)
+    expect(mockPagefind.search).toHaveBeenCalledTimes(0) // Should use cache
+  })
 })
