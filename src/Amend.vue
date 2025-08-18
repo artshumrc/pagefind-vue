@@ -89,7 +89,7 @@ const filtersDefinition: FilterGroup[] = [
     filters: {
       topics: {
         label: 'Topic',
-        type: 'dropdown',
+        type: 'checkboxes',
       },
       type: {
         label: 'Type',

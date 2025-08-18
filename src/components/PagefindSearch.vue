@@ -95,6 +95,17 @@ import { ref, onMounted, computed, watch, nextTick } from 'vue'
 const sortedFilterCache = new Map<string, { [key: string]: number }>()
 const sortCacheKeys = new Map<string, string>()
 
+// Search results cache based on query parameters
+interface CachedSearchResult {
+  results: any[]
+  filters: any
+  total: number
+  timestamp: number
+  tabCounts?: { [key: string]: number }
+}
+
+const searchResultsCache = new Map<string, CachedSearchResult>()
+
 function createSortCacheKey(
   groupName: string,
   group: Record<string, number>,
@@ -107,6 +118,33 @@ function createSortCacheKey(
     .map((k) => group[k])
     .join(',')
   return `${groupName}:${sortFunctionName}:${groupKeys}:${groupValues}`
+}
+
+function createSearchCacheKey(
+  query: string | null,
+  filters: { [key: string]: string[] },
+  sort: any,
+  excludeTabFilter: boolean = false,
+): string {
+  // Create a consistent cache key based on search parameters
+  const queryPart = query || 'null'
+  const sortPart = JSON.stringify(sort)
+
+  // Sort filter keys and values for consistent cache keys
+  const sortedFilters = Object.keys(filters)
+    .sort()
+    .reduce(
+      (acc, key) => {
+        if (excludeTabFilter && key === 'tabbedFilter') return acc
+        acc[key] = [...filters[key]].sort()
+        return acc
+      },
+      {} as { [key: string]: string[] },
+    )
+
+  const filtersPart = JSON.stringify(sortedFilters)
+
+  return `${queryPart}:${filtersPart}:${sortPart}`
 }
 
 function getMemoizedSortedGroup(
@@ -132,6 +170,57 @@ function getMemoizedSortedGroup(
 function clearSortCache() {
   sortedFilterCache.clear()
   sortCacheKeys.clear()
+}
+
+function clearSearchCache() {
+  searchResultsCache.clear()
+}
+
+function pruneExpiredCache() {
+  const now = Date.now()
+  for (const [key, value] of searchResultsCache.entries()) {
+    if (now - value.timestamp > props.cacheTtlMs) {
+      searchResultsCache.delete(key)
+    }
+  }
+}
+
+function pruneCacheBySize() {
+  if (searchResultsCache.size > props.cacheMaxSize) {
+    // Remove oldest entries first (simple LRU-like behavior)
+    const entries = Array.from(searchResultsCache.entries())
+    entries.sort((a, b) => a[1].timestamp - b[1].timestamp)
+
+    const toRemove = entries.slice(0, searchResultsCache.size - props.cacheMaxSize + 10)
+    toRemove.forEach(([key]) => searchResultsCache.delete(key))
+  }
+}
+
+function getCachedSearchResult(cacheKey: string): CachedSearchResult | null {
+  if (!props.enableCache) return null
+
+  pruneExpiredCache()
+  const cached = searchResultsCache.get(cacheKey)
+
+  if (cached && Date.now() - cached.timestamp <= props.cacheTtlMs) {
+    // Update timestamp to implement LRU-like behavior
+    cached.timestamp = Date.now()
+    return cached
+  }
+
+  if (cached) {
+    searchResultsCache.delete(cacheKey)
+  }
+
+  return null
+}
+
+function setCachedSearchResult(cacheKey: string, result: CachedSearchResult) {
+  if (!props.enableCache) return
+
+  pruneCacheBySize()
+  result.timestamp = Date.now()
+  searchResultsCache.set(cacheKey, result)
 }
 
 import Tabs from './Tabs.vue'
@@ -169,6 +258,9 @@ const props = withDefaults(
     checkboxFilterThreshold?: number
     filtersTitle?: string
     searchDebounceMs?: number
+    enableCache?: boolean
+    cacheMaxSize?: number
+    cacheTtlMs?: number
   }>(),
   {
     showKeywordInput: true,
@@ -176,6 +268,9 @@ const props = withDefaults(
     checkboxFilterThreshold: 8,
     filtersTitle: 'Filters',
     searchDebounceMs: 300,
+    enableCache: true,
+    cacheMaxSize: 100,
+    cacheTtlMs: 5 * 60 * 1000, // 5 minutes
   },
 )
 
@@ -630,6 +725,8 @@ const clearSearch = async () => {
   results.value = []
   tabFilters.value = {}
 
+  clearSearchCache()
+
   // Clear URL parameters
   const url = new URL(window.location.href)
   url.searchParams.forEach((_, key) => {
@@ -707,15 +804,53 @@ async function performSearch(query: string | null, isInitialLoad: boolean = fals
     isSearching.value = true
   }
 
-  // Show loading state for large datasets
-  if (!isInitialLoad && results.value.length > 1000) {
-    pageResults.value = [] // Clear current results to show loading
-  }
-
   try {
     const searchFilters = getSearchFilters()
-
     let desiredSort = props.resultSort || { classification: 'asc' }
+
+    // Create cache key for main search
+    const mainCacheKey = createSearchCacheKey(query, searchFilters, desiredSort)
+
+    // Check cache first
+    const cachedResult = getCachedSearchResult(mainCacheKey)
+
+    if (cachedResult) {
+      // Use cached results for immediate response
+      results.value = cachedResult.results
+      totalResults.value = cachedResult.total
+
+      // Only update filters if they changed to avoid unnecessary sort cache clearing
+      const filtersChanged = JSON.stringify(filters.value) !== JSON.stringify(cachedResult.filters)
+      if (filtersChanged) {
+        filters.value = cachedResult.filters
+        clearSortCache() // Clear memoization cache only when filter data actually changes
+      }
+
+      await updateCurrentPageResults()
+
+      // Handle tabs if needed and if we have cached tab counts
+      if (props.tabbedFilter && cachedResult.tabCounts) {
+        calculateTabCountsFromCache(cachedResult.tabCounts)
+
+        if (!activeTab.value && tabs.value.length > 0) {
+          activeTab.value = props.defaultTab || tabs.value[0].value
+        }
+      } else if (props.tabbedFilter) {
+        // Need to calculate tab counts separately if not cached
+        await calculateTabCountsAsync(query, searchFilters)
+      }
+
+      if (!isInitialLoad) {
+        updateUrlParams(currentPage.value)
+      }
+
+      return
+    }
+
+    // Show loading state for large datasets when not using cache
+    if (!isInitialLoad && results.value.length > 1000) {
+      pageResults.value = [] // Clear current results to show loading
+    }
 
     // Only sync URL during user-initiated searches, not during initial page load
     if (!isInitialLoad) {
@@ -732,6 +867,63 @@ async function performSearch(query: string | null, isInitialLoad: boolean = fals
         console.error('Main search failed:', error)
         return { results: [], filters: {}, total: 0 }
       })
+
+    const cacheEntry: CachedSearchResult = {
+      results: searchResults.results,
+      filters: searchResults.filters,
+      total: searchResults.total,
+      timestamp: Date.now(),
+    }
+
+    // Calculate tab counts if needed
+    let tabCountsForCache: { [key: string]: number } | undefined
+    if (props.tabbedFilter) {
+      // Perform secondary search without tab filter
+      const filtersWithoutTab = { ...searchFilters }
+      delete filtersWithoutTab[props.tabbedFilter]
+
+      const tabCacheKey = createSearchCacheKey(query, filtersWithoutTab, desiredSort, true)
+      const cachedTabResult = getCachedSearchResult(tabCacheKey)
+
+      if (cachedTabResult) {
+        // Use cached tab counts
+        tabCountsForCache = cachedTabResult.filters[props.tabbedFilter] || {}
+        if (tabCountsForCache) {
+          calculateTabCountsFromCache(tabCountsForCache)
+        }
+      } else {
+        // Perform search for tab counts
+        const searchMinusTab = await props.pagefind
+          .search(query || null, {
+            sort: props.resultSort || { classification: 'asc' },
+            filters: filtersWithoutTab,
+          })
+          .catch((error: Error) => {
+            console.error('Tab count search failed:', error)
+            return { filters: {} }
+          })
+
+        tabCountsForCache = searchMinusTab.filters[props.tabbedFilter] || {}
+        calculateTabCounts(searchMinusTab.filters)
+
+        setCachedSearchResult(tabCacheKey, {
+          results: searchMinusTab.results || [],
+          filters: searchMinusTab.filters || {},
+          total: searchMinusTab.total || 0,
+          timestamp: Date.now(),
+        })
+      }
+
+      // Handle tab selection
+      if (!activeTab.value && tabs.value.length > 0) {
+        activeTab.value = props.defaultTab || tabs.value[0].value
+      }
+
+      cacheEntry.tabCounts = tabCountsForCache
+    }
+
+    // Cache the main search result
+    setCachedSearchResult(mainCacheKey, cacheEntry)
 
     // For large result sets, prioritize updating UI quickly
     if (searchResults.total > 5000) {
@@ -751,30 +943,6 @@ async function performSearch(query: string | null, isInitialLoad: boolean = fals
     } else {
       // Standard update for smaller result sets
       await updateFiltersAndResults(searchResults)
-    }
-
-    // Calculate tab counts if needed
-    if (props.tabbedFilter) {
-      // Perform secondary search without tab filter
-      const filtersWithoutTab = { ...searchFilters }
-      delete filtersWithoutTab[props.tabbedFilter]
-
-      const searchMinusTab = await props.pagefind
-        .search(query || null, {
-          sort: props.resultSort || { classification: 'asc' },
-          filters: filtersWithoutTab,
-        })
-        .catch((error: Error) => {
-          console.error('Tab count search failed:', error)
-          return { filters: {} }
-        })
-
-      calculateTabCounts(searchMinusTab.filters)
-
-      // Handle tab selection
-      if (!activeTab.value && tabs.value.length > 0) {
-        activeTab.value = props.defaultTab || tabs.value[0].value
-      }
     }
   } catch (error) {
     console.error('Search failed:', error)
@@ -844,6 +1012,40 @@ function calculateTabCounts(filtersMinusTab: Filter = {}) {
   )
 }
 
+function calculateTabCountsFromCache(tabCounts: { [key: string]: number }) {
+  if (!props.tabbedFilter) return
+  tabs.value = sortTabs(
+    Object.entries(tabCounts).map(([value, count]) => ({
+      label: value,
+      value,
+      count,
+    })),
+    props.defaultTab,
+  )
+}
+
+async function calculateTabCountsAsync(
+  query: string | null,
+  searchFilters: { [key: string]: string[] },
+) {
+  if (!props.tabbedFilter || !props.pagefind) return
+
+  // Perform secondary search without tab filter
+  const filtersWithoutTab = { ...searchFilters }
+  delete filtersWithoutTab[props.tabbedFilter]
+
+  try {
+    const searchMinusTab = await props.pagefind.search(query || null, {
+      sort: props.resultSort || { classification: 'asc' },
+      filters: filtersWithoutTab,
+    })
+
+    calculateTabCounts(searchMinusTab.filters)
+  } catch (error) {
+    console.error('Tab count search failed:', error)
+  }
+}
+
 // Expose internal state and methods for testing
 defineExpose({
   selectedFilters,
@@ -855,6 +1057,15 @@ defineExpose({
   isSearching,
   handleFilterUpdate,
   performSearch,
+  // Cache management methods
+  clearSearchCache,
+  getCacheStats: () => ({
+    size: searchResultsCache.size,
+    keys: Array.from(searchResultsCache.keys()),
+    totalMemoryKB: Math.round(
+      JSON.stringify(Array.from(searchResultsCache.values())).length / 1024,
+    ),
+  }),
 })
 </script>
 
