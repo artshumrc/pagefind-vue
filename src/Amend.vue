@@ -5,6 +5,7 @@
     :pagefind="pagefind"
     :filters-definition="filtersDefinition"
     :search-debounce-ms="500"
+    :custom-sort-functions="customSortFunctions"
   >
     <template #collapse-title="{ direction, label }">
       <h2 style="padding: 0; margin: 0">
@@ -26,7 +27,7 @@ import { ref, onMounted } from 'vue'
 import Search from './components/PagefindSearch.vue'
 import AmendSearchResult from './components/AmendSearchResult.vue'
 import ChevronIcon from './components/icons/ChevronIcon.vue'
-import type { FilterGroup } from './components/types'
+import type { FilterGroup, CustomSortFunctions } from './components/types'
 
 let pagefindPath: string
 if (import.meta.env.PROD) {
@@ -37,6 +38,25 @@ if (import.meta.env.PROD) {
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const pagefind = ref<any>(null)
+
+function sortCongressNumerically(a: [string, number], b: [string, number]): number {
+  // Extract the numerical part from the beginning of the string
+  const getCongressNumber = (str: string): number => {
+    const match = str.match(/^(\d+)/)
+    return match ? parseInt(match[1], 10) : Infinity
+  }
+
+  const numA = getCongressNumber(a[0])
+  const numB = getCongressNumber(b[0])
+
+  // Sort numerically by the extracted numbers
+  return numA - numB
+}
+
+// Define customSortFunctions with the Congress sort function
+const customSortFunctions: CustomSortFunctions = {
+  congress: sortCongressNumerically,
+}
 
 const filtersDefinition: FilterGroup[] = [
   {
