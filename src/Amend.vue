@@ -5,6 +5,7 @@
     :pagefind="pagefind"
     :filters-definition="filtersDefinition"
     :search-debounce-ms="500"
+    filters-title="Search Amendments"
   >
     <template #collapse-title="{ direction, label }">
       <h2 style="padding: 0; margin: 0">
@@ -39,38 +40,64 @@ if (import.meta.env.PROD) {
 const pagefind = ref<any>(null)
 
 const filtersDefinition: FilterGroup[] = [
-  {
-    label: 'Sponsorship',
-    collapsible: true,
+    {
+    label: 'Search by Topic or Type',
+    collapsible: false,
     filters: {
-      sponsor_or_proponent: {
-        label: 'Sponsor or Proponent',
+      topics: {
+        label: 'Search by Topic',
+        type: 'checkboxes',
+      },
+      type: {
+        label: 'Search by Type',
+        type: 'dropdown',
+      }
+    },
+  },
+       {
+    label: 'Search by Date or Congress',
+    collapsible: false,
+    filters: {
+      year: {
+        label: 'Search by Date',
         type: 'dropdown',
       },
+      congress: {
+        label: 'Search by Congress',
+        type: 'dropdown',
+      }
+    },
+  },
+  {
+    label: 'Search by Sponsor or State',
+    collapsible: false,
+    filters: {
       sponsors: {
         label: 'Sponsors',
         type: 'dropdown',
       },
-      cosponsors: {
-        label: 'Cosponsors',
+        state_of_origin: {
+        label: 'State of Origin',
         type: 'dropdown',
       },
+
     },
   },
   {
-    label: 'Legislation',
+    label: 'Additional Filters',
     collapsible: true,
+    initiallyOpen: false,
     filters: {
-      congress: {
-        label: 'Congress',
-        type: 'dropdown',
-      },
       chamber: {
         label: 'Chamber',
         type: 'dropdown',
       },
-      state_of_origin: {
-        label: 'State of Origin',
+     sponsor_or_proponent: {
+        label: 'Sponsor or Proponent',
+        type: 'dropdown',
+      },
+            cosponsors: {
+        label: 'Cosponsors',
         type: 'dropdown',
       },
       committee_of_referral: {
@@ -82,25 +109,7 @@ const filtersDefinition: FilterGroup[] = [
         type: 'dropdown',
       },
     },
-  },
-  {
-    label: 'Topics/Type/Year',
-    collapsible: true,
-    filters: {
-      topics: {
-        label: 'Topic',
-        type: 'checkboxes',
-      },
-      type: {
-        label: 'Type',
-        type: 'dropdown',
-      },
-      year: {
-        label: 'Year',
-        type: 'dropdown',
-      },
-    },
-  },
+  }
 ]
 
 onMounted(async () => {
@@ -113,3 +122,142 @@ onMounted(async () => {
   }
 })
 </script>
+
+<style>
+
+@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:ital,wght@0,100..700;1,100..700&family=Space+Grotesk:wght@300..700&display=swap');
+:root {
+  --color-fg-primary: #1a1a1a;   /* dark text */
+  --color-fg-secondary: #909090; /* muted text */
+  --color-bg-primary: #e4e2d4;   /* main background */
+  --color-bg-secondary: #fff; /* card / table background */
+  --color-bg-tertiary: #f1efe7; /* alternating table bg */
+  --color-accent: #F4794D;  
+  --color-accent-contrast: #1D54ED;     /* optional accent color */
+  
+  /* extra colors */
+  --blue: #527DF1;
+  --ltblue: #7194F4;
+  --drkorange:#F4683D;
+  --lightorange:#EFC3B4; 
+  --drkgray: #444356; 
+
+  /* fonts */
+  --body-font: 'Space Grotesk', sans-serif;
+  --input-font: 'IBM Plex Sans', sans-serif;
+
+  /* visible text input */
+  --pagefind-vue-input-border: 1px solid var(--color-fg-secondary);
+  --pagefind-vue-input-border-radius: 0.25rem;
+  --pagefind-vue-input-font-size: 1rem;
+  --pagefind-vue-input-color: black;
+  --pagefind-vue-input-bg:  var(--color-bg-secondary);
+  --pagefind-vue-input-padding: 0.25em 1em;
+
+  /* dropdown container */
+  --pagefind-vue-options-max-height: 200px;
+  --pagefind-vue-options-z-index: 1000;
+  --pagefind-vue-options-bg: var(--color-bg-secondary);
+  --pagefind-vue-options-border: 1px solid var(--color-fg-secondary);
+
+  /* individual option */
+  --pagefind-vue-option-text-align: left;
+  --pagefind-vue-option-padding: 0.4rem;
+  --pagefind-vue-option-color: black;
+  --pagefind-vue-option-font-size: 1rem;
+  --pagefind-vue-option-hover-bg: #b6b6b6;
+  --pagefind-vue-option-selected-bg: var(--blue);
+  --pagefind-vue-option-selected-color: white;
+  --pagefind-vue-option-disabled-bg: #f5f5f5;
+
+  /* text displayed when no results match input */
+  --pagefind-vue-no-results-font-style: italic;
+}
+
+
+/* UNIVERSAL STYLES ---------------------------------------------------------------------------- */
+* {
+	box-sizing: border-box;
+	padding:0;
+	margin:0;
+	overflow-wrap: break-word;
+}
+
+body {
+  background: var(--color-bg-primary);
+  margin: 3em;
+}
+
+p, h1, h2, h3, h4, h2 span, li {	
+  font-family: var(--body-font);
+}
+
+a {
+	text-decoration: none;
+	cursor: pointer;
+	color: black;
+}
+
+/* AMEND STYLES --------------- */
+
+
+input, .label-text, .filterable-dropdown-container, .filterable-dropdown-option {
+  font-family: var(--input-font);
+}
+
+.filterable-dropdown-option {
+  align-items: flex-start;
+}
+
+button {
+  background: var(--color-bg-secondary);
+  border: 1px solid black;
+  cursor: pointer;
+  padding: 0.25rem 0.5rem;
+  border-radius: 0.25em;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  font-size: 0.75rem;
+  transform: scale(1);
+}
+
+h2.filters-header-title {
+  text-transform: uppercase;
+  font-size: 1.5em;
+  font-weight: bold;
+}
+
+.filter-group h3[data-v-04eff8f8] {
+  font-size: 1em;
+  font-weight: normal;
+}
+
+.checkbox-container {
+  background: var(--color-bg-secondary);
+  border-radius: 0;
+}
+
+/* search bar */
+div.search-input-container input#search {
+  width: 100%;
+  min-height: 2.4em;
+  border: 1px solid var(--color-fg-secondary);
+  border-radius: 0.25em;
+  margin: 0.15em 0 0.25em;
+    margin-left: 0px;
+  margin-left: -2px;
+  font-family: var(--input-font)
+
+}
+
+.active-filters-text[data-v-a73318e6] {
+  text-transform: uppercase;
+  color: var(--drkgray);
+  font-family: var(--body-font);
+  font-weight: bold;
+
+
+}
+
+</style>

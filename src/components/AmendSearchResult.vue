@@ -98,12 +98,22 @@ function toggleExpand(event: MouseEvent) {
 </script>
 
 <style scoped>
+#results-list {
+  border-radius: 0.4em;
+  font-family: var(--body-font);
+}
+
 .custom-result {
-  background: #f8f8ff;
   border: 1px solid rgba(0, 0, 0, 0.3);
-  margin-bottom: 0.5rem;
-  border-radius: 4px;
   overflow: visible;
+}
+
+.custom-result:nth-child(even) {
+  background: var(--color-bg-secondary);
+}
+
+.custom-result:nth-child(odd) {
+  background: var(--color-bg-tertiary);
 }
 
 /* Table row view (collapsed) */
@@ -126,14 +136,14 @@ function toggleExpand(event: MouseEvent) {
 .date-cell {
   font-size: 0.9rem;
   white-space: nowrap;
-  font-weight: 500;
+  font-weight: 400;
   text-align: left;
 }
 
 .type-cell {
   font-size: 0.9rem;
   white-space: nowrap;
-  font-weight: 500;
+  font-weight: 400;
   text-align: left;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -153,19 +163,6 @@ function toggleExpand(event: MouseEvent) {
 
 .expand-cell {
   text-align: center;
-}
-
-.expand-button-table {
-  border: 1px solid black;
-  cursor: pointer;
-  padding: 0.25rem 0.5rem;
-  border-radius: 2px;
-  transition: all 0.2s ease;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 0.75rem;
-  transform: scale(1);
 }
 
 .expand-button-table:hover {
@@ -268,7 +265,7 @@ a {
   display: grid;
   grid-template-columns: auto 1fr;
   gap: 0.75rem 1rem;
-  align-items: center;
+  align-items: top;
   margin: 0;
 }
 
