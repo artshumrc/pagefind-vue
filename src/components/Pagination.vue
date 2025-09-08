@@ -28,6 +28,7 @@ const isLastPage = computed(() => internalPage.value >= totalPages.value);
 const totalPages = computed(() => Math.max(1, Math.ceil(props.totalItems / props.itemsPerPage)));
 
 const changePage = (page: number) => {
+  window.scrollTo(0, 0); // Scroll to top on page change
   internalPage.value = page;
   emit('page-change', page);
 };
