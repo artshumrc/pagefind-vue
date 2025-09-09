@@ -8,6 +8,13 @@
       {{ activeFiltersText }}
     </div>
     <h2>{{ totalResultsCount }} Result<span v-if="totalResultsCount !== 1">s</span></h2>
+    <Pagination
+      :current-page="componentCurrentPage"
+      :total-items="props.results.length"
+      :items-per-page="props.itemsPerPage"
+      :reset-scroll-on-page-change="props.resetScrollOnPageChange"
+      @page-change="handlePageChange"
+    />
     <hr class="results-headder-content-separator" />
     <ul id="results-list">
       <li v-for="result in componentPageResults" :key="result?.raw_url">
