@@ -74,6 +74,7 @@
         :current-page="currentPage"
         :total-results="totalResults"
         :active-filters-text="activeFiltersText"
+        :reset-scroll-on-page-change="props.resetScrollOnPageChange"
         @update-url-params="updateUrlParams"
         @perform-search="performSearch"
         @update-page="handlePageChange"
@@ -110,12 +111,14 @@ const props = withDefaults(
     showKeywordInput?: boolean
     checkboxFilterThreshold?: number
     filtersTitle?: string
+    resetScrollOnPageChange?: boolean
   }>(),
   {
     showKeywordInput: true,
     itemsPerPage: 10,
     checkboxFilterThreshold: 8,
     filtersTitle: 'Filters',
+    resetScrollOnPageChange: false,
   },
 )
 

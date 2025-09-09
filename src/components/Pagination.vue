@@ -9,11 +9,14 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue';
 
-const props = defineProps<{
+const props = withDefaults(defineProps<{
   currentPage: number;
   totalItems: number;
   itemsPerPage: number;
-}>();
+  resetScrollOnPageChange?: boolean;
+}>(), {
+  resetScrollOnPageChange: false,
+});
 
 const emit = defineEmits(['page-change']);
 
@@ -28,7 +31,9 @@ const isLastPage = computed(() => internalPage.value >= totalPages.value);
 const totalPages = computed(() => Math.max(1, Math.ceil(props.totalItems / props.itemsPerPage)));
 
 const changePage = (page: number) => {
-  window.scrollTo(0, 0); // Scroll to top on page change
+  if (props.resetScrollOnPageChange) {
+    window.scrollTo(0, 0);
+  }
   internalPage.value = page;
   emit('page-change', page);
 };

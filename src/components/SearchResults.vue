@@ -30,6 +30,7 @@
       :current-page="componentCurrentPage"
       :total-items="props.results.length"
       :items-per-page="props.itemsPerPage"
+      :reset-scroll-on-page-change="props.resetScrollOnPageChange"
       @page-change="handlePageChange"
     />
   </section>
@@ -62,6 +63,10 @@ const props = defineProps({
   activeFiltersText: {
     type: String,
     default: '',
+  },
+  resetScrollOnPageChange: {
+    type: Boolean,
+    default: false,
   },
 })
 
