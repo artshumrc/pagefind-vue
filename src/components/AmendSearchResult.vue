@@ -98,22 +98,12 @@ function toggleExpand(event: MouseEvent) {
 </script>
 
 <style scoped>
-#results-list {
-  border-radius: 0.4em;
-  font-family: var(--body-font);
-}
 
 .custom-result {
-  border: 1px solid rgba(0, 0, 0, 0.3);
+  border-bottom: 1px solid var(--color-fg-secondary);
+  border-left: 1px solid var(--color-fg-secondary);
+  border-right: 1px solid var(--color-fg-secondary);
   overflow: visible;
-}
-
-.custom-result:nth-child(even) {
-  background: var(--color-bg-secondary);
-}
-
-.custom-result:nth-child(odd) {
-  background: var(--color-bg-tertiary);
 }
 
 /* Table row view (collapsed) */
@@ -123,38 +113,42 @@ function toggleExpand(event: MouseEvent) {
   gap: 1rem;
   align-items: center;
   padding: 0.75rem 1.5rem;
-  border-bottom: 1px solid rgba(0, 0, 0, 0.1);
-  min-height: 60px; /* Ensure consistent row height */
+  border-bottom: 0;
+  min-height: 60px; /* unset consistent row height */
   transition: background-color 0.2s ease;
 }
 
 .table-cell {
   padding: 0.5rem 0;
   overflow: hidden; /* Prevent content from breaking grid */
+  align-self: start;
 }
 
 .date-cell {
-  font-size: 0.9rem;
+  font-size: 0.95rem;
   white-space: nowrap;
   font-weight: 400;
   text-align: left;
 }
 
 .type-cell {
-  font-size: 0.9rem;
+  font-size: 0.95rem;
   white-space: nowrap;
   font-weight: 400;
   text-align: left;
   overflow: hidden;
   text-overflow: ellipsis;
+
 }
 
 .title-cell {
-  font-weight: 600;
+  font-size: 0.95rem;
+  font-weight: 400;
   overflow: hidden;
   text-overflow: ellipsis;
-  white-space: nowrap;
+  white-space: wrap;
   min-width: 0;
+  max-height: 70px;
 }
 
 .title-link {
@@ -234,6 +228,7 @@ a {
   gap: 1.5rem;
   align-items: flex-start;
   padding-top: 1rem;
+  border-top: 1px solid var(--color-bg-primary)
 }
 
 .result-text {
@@ -305,7 +300,6 @@ a {
   }
 
   .table-cell {
-    border-bottom: 1px solid rgba(0, 0, 0, 0.1);
     padding-bottom: 0.5rem;
     margin-bottom: 0.5rem;
   }

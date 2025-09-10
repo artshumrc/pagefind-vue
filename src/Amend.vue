@@ -188,7 +188,7 @@ body {
   margin: 3em;
 }
 
-p, h1, h2, h3, h4, h2 span, li {	
+p, h1, h2, h3, h4, h2 span, li, span {	
   font-family: var(--body-font);
 }
 
@@ -199,7 +199,6 @@ a {
 }
 
 /* AMEND STYLES --------------- */
-
 
 input, .label-text, .filterable-dropdown-container, .filterable-dropdown-option {
   font-family: var(--input-font);
@@ -222,13 +221,21 @@ button {
   transform: scale(1);
 }
 
-h2.filters-header-title {
+
+.tabs-clear-row h2.filters-header-title {
   text-transform: uppercase;
   font-size: 1.5em;
-  font-weight: bold;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  white-space: nowrap;
+
 }
 
-.filter-group h3[data-v-04eff8f8] {
+.filter-group-title h2 {
+  font-size: 1.1em;
+}
+
+.filter-group h3 {
   font-size: 1em;
   font-weight: normal;
 }
@@ -239,15 +246,18 @@ h2.filters-header-title {
 }
 
 /* search bar */
+div.search-input-container {
+  margin: 1rem 1rem 0 1rem;
+  padding: 0 .9rem 0 -1rem;
+}
+
 div.search-input-container input#search {
   width: 100%;
   min-height: 2.4em;
   border: 1px solid var(--color-fg-secondary);
   border-radius: 0.25em;
   margin: 0.15em 0 0.25em;
-    margin-left: 0px;
-  margin-left: -2px;
-  font-family: var(--input-font)
+  font-family: var(--input-font);
 
 }
 
@@ -255,9 +265,23 @@ div.search-input-container input#search {
   text-transform: uppercase;
   color: var(--drkgray);
   font-family: var(--body-font);
-  font-weight: bold;
-
-
+  font-weight: bold
 }
 
+
+ul#results-list > li:nth-child(even) {
+  background: var(--color-bg-secondary);
+}
+
+ul#results-list > li:nth-child(odd) {
+  background: var(--color-bg-tertiary);
+}
+
+ul#results-list {
+  border-radius: 0.4em;
+  font-family: var(--body-font);
+}
+
+
 </style>
+
