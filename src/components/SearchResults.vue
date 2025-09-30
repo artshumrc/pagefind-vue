@@ -8,6 +8,13 @@
       {{ activeFiltersText }}
     </div>
     <h2>{{ totalResultsCount }} Result<span v-if="totalResultsCount !== 1">s</span></h2>
+    <Pagination
+      :current-page="componentCurrentPage"
+      :total-items="props.results.length"
+      :items-per-page="props.itemsPerPage"
+      :reset-scroll-on-page-change="props.resetScrollOnPageChange"
+      @page-change="handlePageChange"
+    />
     <hr class="results-headder-content-separator" />
     <ul id="results-list">
       <li v-for="result in componentPageResults" :key="result?.raw_url">
@@ -30,6 +37,7 @@
       :current-page="componentCurrentPage"
       :total-items="props.results.length"
       :items-per-page="props.itemsPerPage"
+      :reset-scroll-on-page-change="props.resetScrollOnPageChange"
       @page-change="handlePageChange"
     />
   </section>
@@ -63,9 +71,13 @@ const props = defineProps({
     type: String,
     default: '',
   },
+  resetScrollOnPageChange: {
+    type: Boolean,
+    default: false,
+  },
 })
 
-const emit = defineEmits(['update-url-params', 'perform-search'])
+const emit = defineEmits(['update-page', 'update-url-params', 'perform-search'])
 
 const componentCurrentPage = ref<number>(props.currentPage || 1)
 const componentPageResults = ref<(ResultData | null)[]>(props.pageResults)
@@ -116,6 +128,7 @@ watch(
 
 const handlePageChange = (page: number) => {
   componentCurrentPage.value = page
+  emit('update-page', page)
   emit('update-url-params', page)
   updateCurrentPageResults()
 }

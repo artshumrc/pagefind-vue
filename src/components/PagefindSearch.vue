@@ -74,8 +74,10 @@
         :current-page="currentPage"
         :total-results="totalResults"
         :active-filters-text="activeFiltersText"
+        :reset-scroll-on-page-change="props.resetScrollOnPageChange"
         @update-url-params="updateUrlParams"
         @perform-search="performSearch"
+        @update-page="handlePageChange"
       >
         <template #result="{ result }">
           <slot name="result" :result="result" />
@@ -109,12 +111,14 @@ const props = withDefaults(
     showKeywordInput?: boolean
     checkboxFilterThreshold?: number
     filtersTitle?: string
+    resetScrollOnPageChange?: boolean
   }>(),
   {
     showKeywordInput: true,
     itemsPerPage: 10,
     checkboxFilterThreshold: 8,
     filtersTitle: 'Filters',
+    resetScrollOnPageChange: false,
   },
 )
 
@@ -476,6 +480,10 @@ const updateUrlParams = (page: number) => {
   })
 
   window.history.replaceState({}, '', url)
+}
+
+function handlePageChange(page: number) {
+  currentPage.value = page
 }
 
 async function updateCurrentPageResults() {
