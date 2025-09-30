@@ -641,7 +641,7 @@ async function performSearch(query: string | null, isInitialLoad: boolean = fals
       calculateTabCounts(searchMinusTab.filters)
 
       // Handle tab selection
-      if (!activeTab.value && tabs.value.length > 0) {
+      if (!activeTab.value && tabs.value.length > 0 && !isInitialLoad) {
         activeTab.value = props.defaultTab || tabs.value[0].value
       }
     } else {
