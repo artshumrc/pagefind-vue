@@ -33,7 +33,8 @@ let pagefindPath: string
 if (import.meta.env.PROD) {
   pagefindPath = new URL('/pagefind-amend/pagefind.js', import.meta.url).href
 } else {
-  pagefindPath = '../../fixtures/pagefind-amend/pagefind.js' // this needs to be the path relative from the file it is actually imported
+  // In development, use a direct path that will be correctly resolved by Vite
+  pagefindPath = '/fixtures/pagefind-amend/pagefind.js'
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -174,7 +175,6 @@ onMounted(async () => {
   --pagefind-vue-no-results-font-style: italic;
 }
 
-
 /* UNIVERSAL STYLES ---------------------------------------------------------------------------- */
 * {
 	box-sizing: border-box;
@@ -216,9 +216,12 @@ button {
   border-radius: 0.25em;
   transition: all 0.2s ease;
   display: flex;
-  align-items: center;
   font-size: 0.75rem;
   transform: scale(1);
+}
+
+.pagination button {
+    justify-content: center;
 }
 
 
