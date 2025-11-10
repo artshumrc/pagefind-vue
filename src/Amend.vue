@@ -28,9 +28,7 @@ import { ref, onMounted } from 'vue'
 import Search from './components/PagefindSearch.vue'
 import AmendSearchResult from './components/AmendSearchResult.vue'
 import ChevronIcon from './components/icons/ChevronIcon.vue'
-import type { CustomSortFunctions, FilterGroup, FilterSortFunction as FilterOptionsSortFunction, } from './components/types'
-import { stringify } from 'querystring'
-import { argv0 } from 'process'
+import type { CustomSortFunctions, FilterGroup, } from './components/types'
 
 let pagefindPath: string
 if (import.meta.env.PROD) {
