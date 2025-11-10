@@ -12,6 +12,7 @@
     :filter-group-sort-function="sortFilterGroupsByList"
     :filters-definition="filtersDefinition"
     :resultSort="resultSort"
+    :reset-scroll-on-page-change="true"
     @update:searchQuery="onQueryChange"
   >
     <template #collapse-title="{ direction, label }">

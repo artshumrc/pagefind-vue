@@ -7,7 +7,16 @@
     <div v-if="activeFiltersText" class="active-filters-text">
       {{ activeFiltersText }}
     </div>
-    <h2>{{ totalResultsCount }} Result<span v-if="totalResultsCount !== 1">s</span></h2>
+    <div class="results-header flex-row" style="justify-content: space-between; align-items: center">
+      <h2>{{ totalResultsCount }} Result<span v-if="totalResultsCount !== 1">s</span></h2>
+      <Pagination
+        :current-page="componentCurrentPage"
+        :total-items="props.results.length"
+        :items-per-page="props.itemsPerPage"
+        :reset-scroll-on-page-change="props.resetScrollOnPageChange"
+        @page-change="handlePageChange"
+      />
+    </div>
     <hr class="results-headder-content-separator" />
 
     <!-- Loading indicator for large datasets -->
@@ -36,6 +45,7 @@
       :current-page="componentCurrentPage"
       :total-items="props.results.length"
       :items-per-page="props.itemsPerPage"
+      :reset-scroll-on-page-change="props.resetScrollOnPageChange"
       @page-change="handlePageChange"
     />
   </section>
@@ -69,9 +79,13 @@ const props = defineProps({
     type: String,
     default: '',
   },
+  resetScrollOnPageChange: {
+    type: Boolean,
+    default: false,
+  },
 })
 
-const emit = defineEmits(['update-url-params', 'perform-search'])
+const emit = defineEmits(['update-page', 'update-url-params', 'perform-search'])
 
 const componentCurrentPage = ref<number>(props.currentPage || 1)
 const componentPageResults = ref<(ResultData | null)[]>(props.pageResults)
@@ -123,6 +137,7 @@ watch(
 
 const handlePageChange = (page: number) => {
   componentCurrentPage.value = page
+  emit('update-page', page)
   emit('update-url-params', page)
   updateCurrentPageResults()
 }

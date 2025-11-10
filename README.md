@@ -224,10 +224,20 @@ function onQueryChange(newQuery: string) {
 If you want to hide the keyword search bar, you can pass a `showKeywordInput` parameter with the value `false` to the Search component
 
 ```vue
+<Search ... :showKeywordInput="false">
+  ...
+</Search>
+```
+
+## Resetting page scroll when page changes
+
+The window's scroll position can be reset to the top of the page when the user navigates between pages as by passing a `resetScrollOnPageChange` parameter as below.
+
+```vue
 <Search
-  ...
-  :=":showKeywordInput="false"">
-  ...
+    ...
+    :reset-scroll-on-page-change="true"
+    ...
 </Search>
 ```
 

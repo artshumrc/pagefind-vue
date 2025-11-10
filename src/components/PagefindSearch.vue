@@ -77,8 +77,10 @@
         :current-page="currentPage"
         :total-results="totalResults"
         :active-filters-text="activeFiltersText"
+        :reset-scroll-on-page-change="props.resetScrollOnPageChange"
         @update-url-params="updateUrlParams"
         @perform-search="performSearch"
+        @update-page="handlePageChange"
       >
         <template #result="{ result }">
           <slot name="result" :result="result" :search-query="searchQuery" />
@@ -261,6 +263,7 @@ const props = withDefaults(
     enableCache?: boolean
     cacheMaxSize?: number
     cacheTtlMs?: number
+    resetScrollOnPageChange?: boolean
   }>(),
   {
     showKeywordInput: true,
@@ -271,6 +274,7 @@ const props = withDefaults(
     enableCache: true,
     cacheMaxSize: 100,
     cacheTtlMs: 5 * 60 * 1000, // 5 minutes
+    resetScrollOnPageChange: false,
   },
 )
 
@@ -649,7 +653,11 @@ const updateUrlParams = (page: number) => {
   window.history.replaceState({}, '', url)
 }
 
-const updateCurrentPageResults = async () => {
+function handlePageChange(page: number) {
+  currentPage.value = page
+}
+
+async function updateCurrentPageResults() {
   if (!results.value) {
     pageResults.value = []
     return
@@ -923,7 +931,7 @@ async function performSearch(
       }
 
       // Handle tab selection
-      if (!activeTab.value && tabs.value.length > 0) {
+      if (!activeTab.value && tabs.value.length > 0 && !isInitialLoad) {
         activeTab.value = props.defaultTab || tabs.value[0].value
       }
 
