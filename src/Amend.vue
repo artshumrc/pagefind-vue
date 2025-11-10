@@ -4,6 +4,7 @@
     v-else
     :pagefind="pagefind"
     :filters-definition="filtersDefinition"
+    :custom-sort-functions="customSortFunctions"
     :search-debounce-ms="500"
     filters-title="Search Amendments"
   >
@@ -27,7 +28,9 @@ import { ref, onMounted } from 'vue'
 import Search from './components/PagefindSearch.vue'
 import AmendSearchResult from './components/AmendSearchResult.vue'
 import ChevronIcon from './components/icons/ChevronIcon.vue'
-import type { FilterGroup } from './components/types'
+import type { CustomSortFunctions, FilterGroup, FilterSortFunction as FilterOptionsSortFunction, } from './components/types'
+import { stringify } from 'querystring'
+import { argv0 } from 'process'
 
 let pagefindPath: string
 if (import.meta.env.PROD) {
@@ -122,6 +125,30 @@ onMounted(async () => {
     console.error('Failed to initialize pagefind:', error)
   }
 })
+
+function getCongressNumber(congress: string): number {
+  const match = congress.match(/\d+/)
+  return match ? parseInt(match[0], 10) : 0
+}
+
+function sortCongressList(a: [string, number], b: [string, number]): number {
+  const congress1 = a[0]
+  const congress2 = b[0]
+
+  if (congress1.startsWith("Unknown")) {
+    return -1
+  } else if (congress2.startsWith("Unknown")) {
+    return 1
+  } else {
+    const congressNum1 = getCongressNumber(congress1);
+    const congressNum2 = getCongressNumber(congress2);
+    return congressNum1 - congressNum2;
+  }
+}
+
+const customSortFunctions: CustomSortFunctions = {
+  congress: sortCongressList,
+}
 </script>
 
 <style>
@@ -133,15 +160,15 @@ onMounted(async () => {
   --color-bg-primary: #e4e2d4;   /* main background */
   --color-bg-secondary: #fff; /* card / table background */
   --color-bg-tertiary: #f1efe7; /* alternating table bg */
-  --color-accent: #F4794D;  
+  --color-accent: #F4794D;
   --color-accent-contrast: #1D54ED;     /* optional accent color */
-  
+
   /* extra colors */
   --blue: #527DF1;
   --ltblue: #7194F4;
   --drkorange:#F4683D;
-  --lightorange:#EFC3B4; 
-  --drkgray: #444356; 
+  --lightorange:#EFC3B4;
+  --drkgray: #444356;
 
   /* fonts */
   --body-font: 'Space Grotesk', sans-serif;
@@ -188,7 +215,7 @@ body {
   margin: 3em;
 }
 
-p, h1, h2, h3, h4, h2 span, li, span {	
+p, h1, h2, h3, h4, h2 span, li, span {
   font-family: var(--body-font);
 }
 
