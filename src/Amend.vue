@@ -7,6 +7,7 @@
     :custom-sort-functions="customSortFunctions"
     :search-debounce-ms="500"
     filters-title="Search Amendments"
+    :search-button="true"
   >
     <template #collapse-title="{ direction, label }">
       <h2 style="padding: 0; margin: 0">

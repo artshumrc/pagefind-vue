@@ -25,6 +25,14 @@
               />
             </div>
           </div>
+          <button
+              v-if="props.searchButton"
+              type="submit"
+              class="search-button"
+              :disabled="isSearching"
+            >
+            Search
+          </button>
         </slot>
       </form>
     </section>
@@ -264,6 +272,7 @@ const props = withDefaults(
     cacheMaxSize?: number
     cacheTtlMs?: number
     resetScrollOnPageChange?: boolean
+    searchButton?: boolean
   }>(),
   {
     showKeywordInput: true,
@@ -275,6 +284,7 @@ const props = withDefaults(
     cacheMaxSize: 100,
     cacheTtlMs: 5 * 60 * 1000, // 5 minutes
     resetScrollOnPageChange: false,
+    searchButton: false,
   },
 )
 
@@ -575,6 +585,11 @@ watch(searchQuery, async (newQuery) => {
   // Skip the watcher during initial setup to avoid overwriting URL params
   if (isInitializing.value) return
 
+  if (props.searchButton) {
+    // If using search button, do not auto-search on input change
+    return
+  }
+
   currentPage.value = 1 // reset to first page on new search
   emit('update:searchQuery', newQuery)
 
@@ -797,7 +812,7 @@ const handleFilterUpdate = (group: string, value: string) => {
     previousValue.length !== currentValue.length ||
     !previousValue.every((val) => currentValue.includes(val))
 
-  if (hasChanged) {
+  if (hasChanged && !props.searchButton) {
     performSearch(searchQuery.value)
   }
 }
@@ -1141,6 +1156,12 @@ form {
   gap: 1rem;
   align-items: center;
   justify-content: center;
+}
+
+.search-button {
+  margin-top: 1rem;
+  cursor: pointer;
+  min-width: fit-content;
 }
 
 .input-wrapper {
