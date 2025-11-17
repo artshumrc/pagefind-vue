@@ -67,7 +67,7 @@ const filtersDefinition: FilterGroup[] = [
       },
       congress: {
         label: 'Search by Congress',
-        type: 'dropdown',
+        type: 'checkboxes',
       }
     },
   },
@@ -77,11 +77,11 @@ const filtersDefinition: FilterGroup[] = [
     filters: {
       sponsors: {
         label: 'Sponsors',
-        type: 'dropdown',
+        type: 'checkboxes',
       },
         state_of_origin: {
         label: 'State of Origin',
-        type: 'dropdown',
+        type: 'checkboxes',
       },
 
     },
@@ -111,6 +111,10 @@ const filtersDefinition: FilterGroup[] = [
         label: 'Bill',
         type: 'dropdown',
       },
+      party_affiliation: {
+        label: 'Search by Party Affiliation',
+        type: 'checkboxes',
+      }
     },
   }
 ]
