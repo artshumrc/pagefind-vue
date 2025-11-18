@@ -18,7 +18,13 @@
       />
     </div>
     <hr class="results-headder-content-separator" />
-    <ul id="results-list">
+
+    <!-- Loading indicator for large datasets -->
+    <div v-if="isLoading" class="loading-indicator">
+      <p>Loading results...</p>
+    </div>
+
+    <ul v-else id="results-list">
       <li v-for="result in componentPageResults" :key="result?.raw_url">
         <template v-if="result">
           <slot name="result" :result="result">
@@ -83,6 +89,7 @@ const emit = defineEmits(['update-page', 'update-url-params', 'perform-search'])
 
 const componentCurrentPage = ref<number>(props.currentPage || 1)
 const componentPageResults = ref<(ResultData | null)[]>(props.pageResults)
+const isLoading = ref(false)
 
 // Computed property for total results count
 const totalResultsCount = computed(() => {
@@ -136,14 +143,37 @@ const handlePageChange = (page: number) => {
 }
 
 async function updateCurrentPageResults() {
+  // Show loading for large datasets
+  if (props.results.length > 1000) {
+    isLoading.value = true
+  }
+
   const start = (componentCurrentPage.value - 1) * props.itemsPerPage
   const end = start + props.itemsPerPage
 
-  // have to await each result to get data, so only await the page results
+  // Optimize for large datasets: only process visible results
   const newPageResults = props.results.slice(start, end)
-  const processed = await Promise.all(newPageResults.map((result) => result.data()))
 
-  componentPageResults.value = processed
+  try {
+    // Use Promise.allSettled for better error handling with large datasets
+    const settledResults = await Promise.allSettled(newPageResults.map((result) => result.data()))
+
+    const processed = settledResults.map((result, index) => {
+      if (result.status === 'fulfilled') {
+        return result.value
+      } else {
+        console.warn(`Failed to load result ${index}:`, result.reason)
+        return null
+      }
+    })
+
+    componentPageResults.value = processed
+  } catch (error) {
+    console.error('Error loading page results:', error)
+    componentPageResults.value = []
+  } finally {
+    isLoading.value = false
+  }
 }
 </script>
 
@@ -166,6 +196,17 @@ async function updateCurrentPageResults() {
   font-size: 0.75rem;
   color: #666;
   margin-bottom: 0.5rem;
+}
+
+.loading-indicator {
+  text-align: center;
+  padding: 2rem;
+  color: #666;
+  font-style: italic;
+}
+
+.loading-indicator p {
+  margin: 0;
 }
 
 .result {

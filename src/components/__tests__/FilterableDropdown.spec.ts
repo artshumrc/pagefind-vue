@@ -37,12 +37,20 @@ describe('FilterableDropdown unit tests', () => {
   it('selects an option when clicked', async () => {
     // Open the dropdown
     await wrapper.find('input[role="combobox"]').trigger('focus')
+    await wrapper.vm.$nextTick()
+
+    // Verify options are visible
+    const optionElements = wrapper.findAll('.filterable-dropdown-option')
+    expect(optionElements.length).toBe(3)
 
     // Click the first option
-    await wrapper.findAll('.filterable-dropdown-option')[0].trigger('click')
+    await optionElements[0].trigger('click')
+    await wrapper.vm.$nextTick()
 
-    // Check that the value was updated
-    expect(wrapper.emitted('update:modelValue')?.[0]).toEqual(['1'])
+    // Check that the value was updated - use the last emission since there may be multiple
+    const emissions = wrapper.emitted('update:modelValue') as string[][]
+    expect(emissions).toBeTruthy()
+    expect(emissions[emissions.length - 1]).toEqual(['1'])
 
     // Input should now display the selected option's label
     const input = wrapper.find('input[role="combobox"]')

@@ -11,7 +11,10 @@
           <div class="input-wrapper">
             <label for="search" class="visually-hidden">Search</label>
             <div class="search-input-container">
-              <MagnifyingGlass class="search-icon" size="24" color="#666" />
+              <MagnifyingGlass v-if="!isSearching" class="search-icon" size="24" color="#666" />
+              <div v-if="isSearching" class="search-loading-indicator">
+                <div class="loading-spinner"></div>
+              </div>
               <input
                 id="search"
                 name="search"
@@ -22,6 +25,14 @@
               />
             </div>
           </div>
+          <button
+              v-if="props.searchButton"
+              type="submit"
+              class="search-button"
+              :disabled="isSearching"
+            >
+            Search
+          </button>
         </slot>
       </form>
     </section>
@@ -80,7 +91,7 @@
         @update-page="handlePageChange"
       >
         <template #result="{ result }">
-          <slot name="result" :result="result" />
+          <slot name="result" :result="result" :search-query="searchQuery" />
         </template>
       </Results>
     </div>
@@ -89,11 +100,156 @@
 
 <script setup lang="ts">
 import { ref, onMounted, computed, watch, nextTick } from 'vue'
+
+// Memoization cache for sorted filter options
+const sortedFilterCache = new Map<string, { [key: string]: number }>()
+const sortCacheKeys = new Map<string, string>()
+
+// Search results cache based on query parameters
+interface CachedSearchResult {
+  results: any[]
+  filters: any
+  total: number
+  timestamp: number
+  tabCounts?: { [key: string]: number }
+}
+
+const searchResultsCache = new Map<string, CachedSearchResult>()
+
+function createSortCacheKey(
+  groupName: string,
+  group: Record<string, number>,
+  sortFunctionName: string,
+): string {
+  // Create a dumb hash of the group data and sort function
+  const groupKeys = Object.keys(group).sort().join(',')
+  const groupValues = Object.keys(group)
+    .sort()
+    .map((k) => group[k])
+    .join(',')
+  return `${groupName}:${sortFunctionName}:${groupKeys}:${groupValues}`
+}
+
+function createSearchCacheKey(
+  query: string | null,
+  filters: { [key: string]: string[] },
+  sort: any,
+  excludeTabFilter: boolean = false,
+): string {
+  // Create a consistent cache key based on search parameters
+  const queryPart = query || 'null'
+  const sortPart = JSON.stringify(sort)
+
+  // Sort filter keys and values for consistent cache keys
+  const sortedFilters = Object.keys(filters)
+    .sort()
+    .reduce(
+      (acc, key) => {
+        if (excludeTabFilter && key === 'tabbedFilter') return acc
+        acc[key] = [...filters[key]].sort()
+        return acc
+      },
+      {} as { [key: string]: string[] },
+    )
+
+  const filtersPart = JSON.stringify(sortedFilters)
+
+  return `${queryPart}:${filtersPart}:${sortPart}`
+}
+
+function getMemoizedSortedGroup(
+  groupName: string,
+  group: Record<string, number>,
+  sortFunction: (a: [string, number], b: [string, number]) => number,
+): { [key: string]: number } {
+  const sortFunctionName = sortFunction.name || 'anonymous'
+  const cacheKey = createSortCacheKey(groupName, group, sortFunctionName)
+
+  const existingCacheKey = sortCacheKeys.get(groupName)
+  if (existingCacheKey === cacheKey && sortedFilterCache.has(groupName)) {
+    return sortedFilterCache.get(groupName)!
+  }
+
+  const sortedGroup = Object.fromEntries(Object.entries(group).sort(sortFunction))
+  sortedFilterCache.set(groupName, sortedGroup)
+  sortCacheKeys.set(groupName, cacheKey)
+
+  return sortedGroup
+}
+
+function clearSortCache() {
+  sortedFilterCache.clear()
+  sortCacheKeys.clear()
+}
+
+function clearSearchCache() {
+  searchResultsCache.clear()
+}
+
+function pruneExpiredCache() {
+  const now = Date.now()
+  for (const [key, value] of searchResultsCache.entries()) {
+    if (now - value.timestamp > props.cacheTtlMs) {
+      searchResultsCache.delete(key)
+    }
+  }
+}
+
+function pruneCacheBySize() {
+  if (searchResultsCache.size > props.cacheMaxSize) {
+    // Remove oldest entries first (simple LRU-like behavior)
+    const entries = Array.from(searchResultsCache.entries())
+    entries.sort((a, b) => a[1].timestamp - b[1].timestamp)
+
+    const toRemove = entries.slice(0, searchResultsCache.size - props.cacheMaxSize + 10)
+    toRemove.forEach(([key]) => searchResultsCache.delete(key))
+  }
+}
+
+function getCachedSearchResult(cacheKey: string): CachedSearchResult | null {
+  if (!props.enableCache) return null
+
+  pruneExpiredCache()
+  const cached = searchResultsCache.get(cacheKey)
+
+  if (cached && Date.now() - cached.timestamp <= props.cacheTtlMs) {
+    // Update timestamp to implement LRU-like behavior
+    cached.timestamp = Date.now()
+    return cached
+  }
+
+  if (cached) {
+    searchResultsCache.delete(cacheKey)
+  }
+
+  return null
+}
+
+function setCachedSearchResult(cacheKey: string, result: CachedSearchResult) {
+  if (!props.enableCache) return
+
+  pruneCacheBySize()
+  result.timestamp = Date.now()
+  searchResultsCache.set(cacheKey, result)
+}
+
 import Tabs from './Tabs.vue'
 import Filters from './SearchFilters.vue'
 import Results from './SearchResults.vue'
 import MagnifyingGlass from './icons/MagnifyingGlass.vue'
 import type { FiltersDefinition, Filter, FilterGroup, ResultData, SortOption } from './types'
+
+// Debounce utility for search optimization
+function debounce<T extends (...args: any[]) => any>(
+  func: T,
+  delay: number,
+): (...args: Parameters<T>) => void {
+  let timeoutId: ReturnType<typeof setTimeout>
+  return (...args: Parameters<T>) => {
+    clearTimeout(timeoutId)
+    timeoutId = setTimeout(() => func(...args), delay)
+  }
+}
 
 const props = withDefaults(
   defineProps<{
@@ -111,14 +267,24 @@ const props = withDefaults(
     showKeywordInput?: boolean
     checkboxFilterThreshold?: number
     filtersTitle?: string
+    searchDebounceMs?: number
+    enableCache?: boolean
+    cacheMaxSize?: number
+    cacheTtlMs?: number
     resetScrollOnPageChange?: boolean
+    searchButton?: boolean
   }>(),
   {
     showKeywordInput: true,
     itemsPerPage: 10,
     checkboxFilterThreshold: 8,
     filtersTitle: 'Filters',
+    searchDebounceMs: 300,
+    enableCache: true,
+    cacheMaxSize: 100,
+    cacheTtlMs: 5 * 60 * 1000, // 5 minutes
     resetScrollOnPageChange: false,
+    searchButton: false,
   },
 )
 
@@ -136,7 +302,14 @@ const selectedFilters = ref<{ [key: string]: string[] }>({})
 // Store per-tab filters
 const tabFilters = ref<{ [tabValue: string]: { [key: string]: string[] } }>({})
 const showKeywordInput = props.showKeywordInput
+
 const isInitializing = ref(true)
+const isSearching = ref(false)
+
+// Debounced search function for better performance with large datasets
+const debouncedSearch = debounce(async (query: string | null) => {
+  await performSearch(query)
+}, props.searchDebounceMs) // Configurable delay
 
 const emit = defineEmits(['update:searchQuery'])
 
@@ -144,6 +317,7 @@ onMounted(async () => {
   if (props.pagefind) {
     const initialFilters = await props.pagefind.filters()
     filters.value = initialFilters
+    clearSortCache() // Clear cache on initial load
   }
 
   const searchParams = new URLSearchParams(window.location.search)
@@ -308,11 +482,10 @@ const filteredKeywordFilters = computed(() => {
     })
   }
 
-  // Finally, sort the filter options
   let f = Object.fromEntries(
     filteredByKey.map(([key, group]) => [
       key,
-      Object.fromEntries(Object.entries(group).sort(customSort(key))),
+      getMemoizedSortedGroup(key, group as Record<string, number>, customSort(key)),
     ]),
   )
   return f
@@ -412,10 +585,23 @@ watch(searchQuery, async (newQuery) => {
   // Skip the watcher during initial setup to avoid overwriting URL params
   if (isInitializing.value) return
 
+  if (props.searchButton) {
+    // If using search button, do not auto-search on input change
+    return
+  }
+
   currentPage.value = 1 // reset to first page on new search
   emit('update:searchQuery', newQuery)
+
+  if (newQuery.trim() !== '') {
+    isSearching.value = true
+  } else {
+    isSearching.value = false
+  }
+
   await nextTick() // wait for any changes to sort type, etc before searching
-  await performSearch(newQuery || null)
+
+  debouncedSearch(newQuery || null)
 })
 
 watch(
@@ -495,11 +681,27 @@ async function updateCurrentPageResults() {
   const start = (currentPage.value - 1) * itemsPerPage
   const end = start + itemsPerPage
 
-  // have to await each result to get data, so only await the page results for better performance
+  // Lazy load results only when needed, with error handling
   const newPageResults = results.value.slice(start, end)
-  const processed = await Promise.all(newPageResults.map((result) => result.data()))
 
-  pageResults.value = processed
+  try {
+    // Use Promise.allSettled to handle individual failures a little more gracefully
+    const settledResults = await Promise.allSettled(newPageResults.map((result) => result.data()))
+
+    const processed = settledResults.map((result, index) => {
+      if (result.status === 'fulfilled') {
+        return result.value
+      } else {
+        console.warn(`Failed to load result ${index}:`, result.reason)
+        return null
+      }
+    })
+
+    pageResults.value = processed
+  } catch (error) {
+    console.error('Error loading page results:', error)
+    pageResults.value = []
+  }
 }
 
 /**
@@ -509,7 +711,15 @@ async function updateCurrentPageResults() {
 const updateFiltersAndResults = async (searchResults: any) => {
   results.value = searchResults.results
   totalResults.value = searchResults.total
-  filters.value = searchResults.filters // Add this line to update filters
+
+  // Only clear cache if filters actually changed
+  const filtersChanged = JSON.stringify(filters.value) !== JSON.stringify(searchResults.filters)
+  filters.value = searchResults.filters
+
+  if (filtersChanged) {
+    clearSortCache() // Clear memoization cache only when filter data actually changes
+  }
+
   await updateCurrentPageResults()
 }
 
@@ -551,8 +761,9 @@ const clearSearch = async () => {
     ;(input as HTMLInputElement).value = ''
   })
 
-  // Wait for state updates befure updating results or else the Pagination component state will not be updated
+  // Wait for state updates before updating results or else the Pagination component state will not be updated
   await nextTick()
+  // Use normal performSearch to leverage caching - this will use cached null search if available
   await performSearch(null)
 }
 
@@ -563,6 +774,9 @@ const clearSearch = async () => {
  * When any filter is updated, this function is called.
  */
 const handleFilterUpdate = (group: string, value: string) => {
+  // Store previous state to prevent unnecessary searches
+  const previousValue = selectedFilters.value[group]?.slice() || []
+
   // If using tabs, only allow filters for the current tab
   if (props.tabbedFilter && group === props.tabbedFilter) {
     selectedFilters.value[group] = [value]
@@ -592,17 +806,80 @@ const handleFilterUpdate = (group: string, value: string) => {
     }
   }
 
-  performSearch(searchQuery.value)
+  // Only perform search if the filter actually changed
+  const currentValue = selectedFilters.value[group] || []
+  const hasChanged =
+    previousValue.length !== currentValue.length ||
+    !previousValue.every((val) => currentValue.includes(val))
+
+  if (hasChanged && !props.searchButton) {
+    performSearch(searchQuery.value)
+  }
 }
 
-async function performSearch(query: string | null, isInitialLoad: boolean = false) {
-  console.log('Performing search with query:', query)
+async function performSearch(
+  query: string | null,
+  isInitialLoad: boolean = false,
+  skipCache: boolean = false,
+) {
   if (!props.pagefind) return
+
+  // Set loading state for non-debounced calls (like filter updates, tab changes, etc.)
+  // Don't override loading state that might already be set by input watcher
+  if (!isInitialLoad && !isSearching.value) {
+    isSearching.value = true
+  }
 
   try {
     const searchFilters = getSearchFilters()
-
     let desiredSort = props.resultSort || { classification: 'asc' }
+
+    // Create cache key for main search
+    const mainCacheKey = createSearchCacheKey(query, searchFilters, desiredSort)
+
+    // Check cache first (unless skipping cache)
+    if (!skipCache) {
+      const cachedResult = getCachedSearchResult(mainCacheKey)
+
+      if (cachedResult) {
+        // Use cached results for immediate response
+        results.value = cachedResult.results
+        totalResults.value = cachedResult.total
+
+        // Only update filters if they changed to avoid unnecessary sort cache clearing
+        const filtersChanged =
+          JSON.stringify(filters.value) !== JSON.stringify(cachedResult.filters)
+        if (filtersChanged) {
+          filters.value = cachedResult.filters
+          clearSortCache() // Clear memoization cache only when filter data actually changes
+        }
+
+        await updateCurrentPageResults()
+
+        // Handle tabs if needed and if we have cached tab counts
+        if (props.tabbedFilter && cachedResult.tabCounts) {
+          calculateTabCountsFromCache(cachedResult.tabCounts)
+
+          if (!activeTab.value && tabs.value.length > 0) {
+            activeTab.value = props.defaultTab || tabs.value[0].value
+          }
+        } else if (props.tabbedFilter) {
+          // Need to calculate tab counts separately if not cached
+          await calculateTabCountsAsync(query, searchFilters)
+        }
+
+        if (!isInitialLoad) {
+          updateUrlParams(currentPage.value)
+        }
+
+        return
+      }
+    }
+
+    // Show loading state for large datasets when not using cache
+    if (!isInitialLoad && results.value.length > 1000) {
+      pageResults.value = [] // Clear current results to show loading
+    }
 
     // Only sync URL during user-initiated searches, not during initial page load
     if (!isInitialLoad) {
@@ -620,32 +897,84 @@ async function performSearch(query: string | null, isInitialLoad: boolean = fals
         return { results: [], filters: {}, total: 0 }
       })
 
+    const cacheEntry: CachedSearchResult = {
+      results: searchResults.results,
+      filters: searchResults.filters,
+      total: searchResults.total,
+      timestamp: Date.now(),
+    }
+
     // Calculate tab counts if needed
+    let tabCountsForCache: { [key: string]: number } | undefined
     if (props.tabbedFilter) {
       // Perform secondary search without tab filter
       const filtersWithoutTab = { ...searchFilters }
       delete filtersWithoutTab[props.tabbedFilter]
 
-      const searchMinusTab = await props.pagefind
-        .search(query || null, {
-          sort: props.resultSort || { classification: 'asc' },
-          filters: filtersWithoutTab,
-        })
-        .catch((error: Error) => {
-          console.error('Tab count search failed:', error)
-          return { filters: {} }
-        })
+      const tabCacheKey = createSearchCacheKey(query, filtersWithoutTab, desiredSort, true)
+      const cachedTabResult = getCachedSearchResult(tabCacheKey)
 
-      // Update UI with results
-      await updateFiltersAndResults(searchResults)
-      calculateTabCounts(searchMinusTab.filters)
+      if (cachedTabResult) {
+        // Use cached tab counts
+        tabCountsForCache = cachedTabResult.filters[props.tabbedFilter] || {}
+        if (tabCountsForCache) {
+          calculateTabCountsFromCache(tabCountsForCache)
+        }
+      } else {
+        // Perform search for tab counts
+        const searchMinusTab = await props.pagefind
+          .search(query || null, {
+            sort: props.resultSort || { classification: 'asc' },
+            filters: filtersWithoutTab,
+          })
+          .catch((error: Error) => {
+            console.error('Tab count search failed:', error)
+            return { filters: {} }
+          })
+
+        tabCountsForCache = searchMinusTab.filters[props.tabbedFilter] || {}
+        calculateTabCounts(searchMinusTab.filters)
+
+        if (!skipCache) {
+          setCachedSearchResult(tabCacheKey, {
+            results: searchMinusTab.results || [],
+            filters: searchMinusTab.filters || {},
+            total: searchMinusTab.total || 0,
+            timestamp: Date.now(),
+          })
+        }
+      }
 
       // Handle tab selection
       if (!activeTab.value && tabs.value.length > 0 && !isInitialLoad) {
         activeTab.value = props.defaultTab || tabs.value[0].value
       }
+
+      cacheEntry.tabCounts = tabCountsForCache
+    }
+
+    // Cache the main search result (unless skipping cache)
+    if (!skipCache) {
+      setCachedSearchResult(mainCacheKey, cacheEntry)
+    }
+
+    // For large result sets, prioritize updating UI quickly
+    if (searchResults.total > 5000) {
+      // Update results first for immediate feedback
+      results.value = searchResults.results
+      totalResults.value = searchResults.total
+
+      await updateCurrentPageResults()
+
+      // Update filters after results for better perceived performance
+      const filtersChanged = JSON.stringify(filters.value) !== JSON.stringify(searchResults.filters)
+      filters.value = searchResults.filters
+
+      if (filtersChanged) {
+        clearSortCache() // Clear memoization cache only when filter data actually changes
+      }
     } else {
-      // Update UI with results for non-tabbed search
+      // Standard update for smaller result sets
       await updateFiltersAndResults(searchResults)
     }
   } catch (error) {
@@ -653,6 +982,11 @@ async function performSearch(query: string | null, isInitialLoad: boolean = fals
     results.value = []
     pageResults.value = []
     totalResults.value = 0
+  } finally {
+    // Always clear loading state for non-initial loads
+    if (!isInitialLoad) {
+      isSearching.value = false
+    }
   }
 }
 
@@ -711,6 +1045,40 @@ function calculateTabCounts(filtersMinusTab: Filter = {}) {
   )
 }
 
+function calculateTabCountsFromCache(tabCounts: { [key: string]: number }) {
+  if (!props.tabbedFilter) return
+  tabs.value = sortTabs(
+    Object.entries(tabCounts).map(([value, count]) => ({
+      label: value,
+      value,
+      count,
+    })),
+    props.defaultTab,
+  )
+}
+
+async function calculateTabCountsAsync(
+  query: string | null,
+  searchFilters: { [key: string]: string[] },
+) {
+  if (!props.tabbedFilter || !props.pagefind) return
+
+  // Perform secondary search without tab filter
+  const filtersWithoutTab = { ...searchFilters }
+  delete filtersWithoutTab[props.tabbedFilter]
+
+  try {
+    const searchMinusTab = await props.pagefind.search(query || null, {
+      sort: props.resultSort || { classification: 'asc' },
+      filters: filtersWithoutTab,
+    })
+
+    calculateTabCounts(searchMinusTab.filters)
+  } catch (error) {
+    console.error('Tab count search failed:', error)
+  }
+}
+
 // Expose internal state and methods for testing
 defineExpose({
   selectedFilters,
@@ -719,6 +1087,18 @@ defineExpose({
   clearSearch,
   mounted,
   isInitializing,
+  isSearching,
+  handleFilterUpdate,
+  performSearch,
+  // Cache management methods
+  clearSearchCache,
+  getCacheStats: () => ({
+    size: searchResultsCache.size,
+    keys: Array.from(searchResultsCache.keys()),
+    totalMemoryKB: Math.round(
+      JSON.stringify(Array.from(searchResultsCache.values())).length / 1024,
+    ),
+  }),
 })
 </script>
 
@@ -737,13 +1117,17 @@ defineExpose({
   --pagefind-vue-options-border: 1px solid #ccc;
   --pagefind-vue-options-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
   --pagefind-vue-option-text-align: left;
-  --pagefind-vue-option-padding: 0.4rem;
+  --pagefind-vue-option-padding: 0.25rem 0.5rem; /* Reduced vertical padding */
   --pagefind-vue-option-color: black;
   --pagefind-vue-option-font-size: 1rem;
   --pagefind-vue-option-hover-bg: #b6b6b6;
   --pagefind-vue-option-selected-bg: #c1ffbe;
   --pagefind-vue-option-disabled-bg: #f5f5f5;
   --pagefind-vue-no-results-font-style: italic;
+  --pagefind-vue-loading-spinner-size: 20px;
+  --pagefind-vue-loading-spinner-border: 2px;
+  --pagefind-vue-loading-spinner-color: #007bff;
+  --pagefind-vue-loading-spinner-bg: #f3f3f3;
 }
 </style>
 
@@ -772,6 +1156,12 @@ form {
   gap: 1rem;
   align-items: center;
   justify-content: center;
+}
+
+.search-button {
+  margin-top: 1rem;
+  cursor: pointer;
+  min-width: fit-content;
 }
 
 .input-wrapper {
@@ -938,6 +1328,35 @@ button {
 
 #results-list mark {
   color: black;
+}
+
+.search-loading-indicator {
+  position: absolute;
+  left: 0.75rem;
+  top: 50%;
+  transform: translateY(-50%);
+  display: flex;
+  align-items: center;
+  z-index: 2;
+}
+
+.loading-spinner {
+  width: var(--pagefind-vue-loading-spinner-size);
+  height: var(--pagefind-vue-loading-spinner-size);
+  border: var(--pagefind-vue-loading-spinner-border) solid var(--pagefind-vue-loading-spinner-bg);
+  border-top: var(--pagefind-vue-loading-spinner-border) solid
+    var(--pagefind-vue-loading-spinner-color);
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
 }
 
 @media (max-width: 768px) {

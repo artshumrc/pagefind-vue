@@ -344,10 +344,12 @@ describe('SearchFilters with FilterGroup Array', () => {
 
       // Simulate filter update
       await filterComponent.vm.$emit('update:filters', 'category', 'Technology')
+      await nextTick()
 
-      // Check that the event was properly emitted up
-      expect(wrapper.emitted('update:filters')).toBeTruthy()
-      expect(wrapper.emitted('update:filters')![0]).toEqual(['category', 'Technology'])
+      // Check that the event was properly emitted up - use the last emission
+      const emissions = wrapper.emitted('update:filters') as [string, string][]
+      expect(emissions).toBeTruthy()
+      expect(emissions[emissions.length - 1]).toEqual(['category', 'Technology'])
     })
   })
 
