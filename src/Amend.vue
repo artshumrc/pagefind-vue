@@ -71,6 +71,16 @@ const filtersDefinition: FilterGroup[] = [
       }
     },
   },
+   {
+    label: 'Search by Party Affiliation',
+    collapsible: false,
+    filters: {
+      party_affiliation: {
+        label: 'Party',
+        type: 'checkboxes',
+      }
+    },
+  },
   {
     label: 'Search by Sponsor or State',
     collapsible: false,
@@ -82,10 +92,10 @@ const filtersDefinition: FilterGroup[] = [
         state_of_origin: {
         label: 'State of Origin',
         type: 'checkboxes',
-      },
-
+      }
     },
   },
+   
   {
     label: 'Additional Filters',
     collapsible: true,
@@ -110,10 +120,6 @@ const filtersDefinition: FilterGroup[] = [
       bill: {
         label: 'Bill',
         type: 'dropdown',
-      },
-      party_affiliation: {
-        label: 'Search by Party Affiliation',
-        type: 'checkboxes',
       }
     },
   }
@@ -252,6 +258,10 @@ button {
 
 .pagination button {
     justify-content: center;
+}
+
+.search-button {
+  background-color: var(--color-accent)
 }
 
 
