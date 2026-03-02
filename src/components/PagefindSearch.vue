@@ -473,6 +473,7 @@ const filteredKeywordFilters = computed(() => {
     filteredByKey = filteredByKey.map(([key, options]) => {
       const excludedOptions = props.excludeFilterOptions?.[key] || []
       if (excludedOptions.length > 0) {
+        // Remove excluded options from this filter group
         return [
           key,
           Object.fromEntries(
@@ -487,24 +488,24 @@ const filteredKeywordFilters = computed(() => {
   }
 
   for (const [key, group] of filteredByKey) {
-  // Use memoized sort function
-  const sortedObj = getMemoizedSortedGroup(key, group as Record<string, number>, customSort(key))
+    // Use memoized sort function
+    const sortedObj = getMemoizedSortedGroup(key, group as Record<string, number>, customSort(key))
 
-  // Convert to Map to preserve order, then extract keys
-  const sorted = new Map(Object.entries(sortedObj).sort(customSort(key)))
+    // Convert to Map to preserve order, then extract keys
+    const sorted = new Map(Object.entries(sortedObj).sort(customSort(key)))
 
-  // Store object and track order
-  const obj: Record<string, number> = {}
-  const orderedKeys: string[] = []
+    // Store object and track order
+    const obj: Record<string, number> = {}
+    const orderedKeys: string[] = []
 
-  for (const [k, v] of sorted) {
-    obj[k] = v
-    orderedKeys.push(k)
+    for (const [k, v] of sorted) {
+      obj[k] = v
+      orderedKeys.push(k)
+    }
+
+    result[key] = obj
+    keyOrder[key] = orderedKeys
   }
-
-  result[key] = obj
-  keyOrder[key] = orderedKeys
-}
 
   // Store order for child components
   filterKeyOrder.value = keyOrder
