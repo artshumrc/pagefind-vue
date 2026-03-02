@@ -26,6 +26,7 @@ import CheckboxGroup from './CheckboxGroup.vue'
 const props = defineProps<{
   name: string
   options: { [key: string]: number }
+  keyOrder?: string[]
   selectedFilters: { [key: string]: string[] }
   checkboxFilterThreshold: number
   filterType?: string
@@ -40,21 +41,23 @@ const dropdownOptionsCache = new Map<string, typeof dropdownOptions.value>()
 const optionsCacheKey = ref('')
 
 const dropdownOptions = computed(() => {
-  // Create a cache key based on options object
-  const newCacheKey = JSON.stringify(props.options)
+  const newCacheKey = JSON.stringify({ options: props.options, keyOrder: props.keyOrder })
 
-  // Return cached result if options haven't changed
+  // Return cached result if nothing changed
   if (optionsCacheKey.value === newCacheKey && dropdownOptionsCache.has(newCacheKey)) {
     return dropdownOptionsCache.get(newCacheKey)!
   }
 
-  const result = Object.keys(props.options).map((value) => ({
+  const keys = props.keyOrder && props.keyOrder.length > 0
+    ? props.keyOrder
+    : Object.keys(props.options)
+
+  const result = keys.map((value) => ({
     value,
     label: value,
     count: props.options[value],
   }))
 
-  // Update cache
   optionsCacheKey.value = newCacheKey
   dropdownOptionsCache.set(newCacheKey, result)
 

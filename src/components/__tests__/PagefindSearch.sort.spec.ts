@@ -286,27 +286,29 @@ const mockPagefindNumericKeys = {
 }
 
 it('Should sort numeric keys using the correct sort (here by facet count descending)', async () => {
-    const wrapper = mount(PagefindSearch, {
-      props: {
-        pagefind: mockPagefindNumericKeys,
+  const wrapper = mount(PagefindSearch, {
+    props: {
+      pagefind: mockPagefindNumericKeys,
+    },
+    global: {
+      stubs: {
+        Filters: true,
+        Results: true,
+        Tabs: true,
       },
-      global: {
-        stubs: {
-          Filters: true,
-          Results: true,
-          Tabs: true,
-        },
-      },
-    })
-
-    await nextTick()
-
-    // Verify filteredKeywordFilters computed property uses the custom default sort
-    const vm = wrapper.vm as any
-
-    expect(Object.keys(vm.filteredKeywordFilters.category)).toEqual([
-      3,
-      1,
-      2,
-    ])
+    },
   })
+
+  await nextTick()
+
+  // Wait for performSearch to complete
+  const vm = wrapper.vm as any
+  await new Promise(resolve => setTimeout(resolve, 100))
+  await nextTick()
+
+  expect(vm.filterKeyOrder.category).toEqual([
+    '3',
+    '1',
+    '2',
+  ])
+})

@@ -58,6 +58,7 @@
                 <FilterComponent
                   :name="groupName"
                   :options="filteredKeywordFilters[groupName]"
+                  :key-order="filterKeyOrder?.[groupName]"
                   :selected-filters="selectedFilters"
                   :filter-type="getFilterType(groupName, filterGroup)"
                   :checkbox-filter-threshold="checkboxFilterThreshold"
@@ -82,6 +83,7 @@
         <FilterComponent
           :name="groupName"
           :options="filteredKeywordFilters[groupName]"
+          :key-order="filterKeyOrder?.[groupName]"
           :selected-filters="selectedFilters"
           :filter-type="getFilterType(groupName)"
           :checkbox-filter-threshold="checkboxFilterThreshold"
@@ -101,6 +103,7 @@ import ChevronIcon from '../components/icons/ChevronIcon.vue'
 const props = defineProps<{
   filteredFilters: Record<string, { [key: string]: number }>
   filteredKeywordFilters: { [key: string]: { [key: string]: number } }
+  filterKeyOrder?: { [groupName: string]: string[] }
   selectedFilters: { [key: string]: string[] }
   checkboxFilterThreshold: number
   multiSelectFilters?: string[]
