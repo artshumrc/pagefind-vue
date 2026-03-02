@@ -58,6 +58,7 @@ const dropdownOptions = computed(() => {
     count: props.options[value],
   }))
 
+  // Update cache
   optionsCacheKey.value = newCacheKey
   dropdownOptionsCache.set(newCacheKey, result)
 
