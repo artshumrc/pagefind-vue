@@ -43,7 +43,7 @@ const optionsCacheKey = ref('')
 const dropdownOptions = computed(() => {
   const newCacheKey = JSON.stringify({ options: props.options, keyOrder: props.keyOrder })
 
-  // Return cached result if nothing changed
+  // Return cached result if options haven't changed
   if (optionsCacheKey.value === newCacheKey && dropdownOptionsCache.has(newCacheKey)) {
     return dropdownOptionsCache.get(newCacheKey)!
   }
