@@ -267,3 +267,46 @@ describe('PagefindSearch filter options user-passed sort function logic', () => 
     expect(vm.sortedFilterGroups).toEqual(['category', 'author'])
   })
 })
+
+const mockFiltersNumericKeys = {
+  category: {
+    1: 10,
+    2: 5,
+    3: 15,
+  }
+}
+
+const mockPagefindNumericKeys = {
+  search: vi.fn().mockResolvedValue({
+    results: [],
+    filters: mockFiltersNumericKeys,
+    total: 0,
+  }),
+  filters: vi.fn().mockResolvedValue(mockFiltersNumericKeys),
+}
+
+it('Should sort numeric keys using the correct sort (here by facet count descending)', async () => {
+    const wrapper = mount(PagefindSearch, {
+      props: {
+        pagefind: mockPagefindNumericKeys,
+      },
+      global: {
+        stubs: {
+          Filters: true,
+          Results: true,
+          Tabs: true,
+        },
+      },
+    })
+
+    await nextTick()
+
+    // Verify filteredKeywordFilters computed property uses the custom default sort
+    const vm = wrapper.vm as any
+
+    expect(Object.keys(vm.filteredKeywordFilters.category)).toEqual([
+      3,
+      1,
+      2,
+    ])
+  })
