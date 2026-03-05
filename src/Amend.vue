@@ -95,7 +95,7 @@ const filtersDefinition: FilterGroup[] = [
       }
     },
   },
-   
+
   {
     label: 'Additional Filters',
     collapsible: true,
@@ -143,10 +143,16 @@ function getCongressNumber(congress: string): number {
 function sortCongressList(a: [string, number], b: [string, number]): number {
   const congress1 = a[0]
   const congress2 = b[0]
+  const count1 = a[1]
+  const count2 = b[1]
 
   if (congress1.startsWith("Unknown")) {
     return -1
   } else if (congress2.startsWith("Unknown")) {
+    return 1
+  } else if (count1 > count2) {
+    return -1
+  } else if (count1 < count2) {
     return 1
   } else {
     const congressNum1 = getCongressNumber(congress1);
@@ -155,8 +161,23 @@ function sortCongressList(a: [string, number], b: [string, number]): number {
   }
 }
 
+function sortYearList(a: [string, number], b: [string, number]): number {
+  const year1 = parseInt(a[0], 10)
+  const year2 = parseInt(b[0], 10)
+  const count1 = a[1]
+  const count2 = b[1]
+  if (count1 > count2) {
+    return -1
+  } else if (count1 < count2) {
+    return 1
+  } else {
+    return year2 - year1
+  }
+}
+
 const customSortFunctions: CustomSortFunctions = {
   congress: sortCongressList,
+  year: sortYearList,
 }
 </script>
 

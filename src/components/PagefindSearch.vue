@@ -66,6 +66,7 @@
         :filtered-filters="filteredFilters"
         :filtered-keyword-filters="filteredKeywordFilters"
         :selected-filters="selectedFilters"
+        :filter-key-order="filterKeyOrder"
         :sorted-groups="sortedFilterGroups"
         :filters-definition="filtersDefinition"
         :custom-sort-functions="customSortFunctions"
@@ -299,6 +300,7 @@ const currentPage = ref(1)
 const totalResults = ref(0)
 const activeTab = ref('')
 const selectedFilters = ref<{ [key: string]: string[] }>({})
+const filterKeyOrder = ref<{ [groupName: string]: string[] }>({})
 // Store per-tab filters
 const tabFilters = ref<{ [tabValue: string]: { [key: string]: string[] } }>({})
 const showKeywordInput = props.showKeywordInput
@@ -457,6 +459,9 @@ function customSort(groupName: string) {
 const filteredKeywordFilters = computed(() => {
   if (!filters.value) return {}
 
+  const result: { [key: string]: Record<string, number> } = {}
+  const keyOrder: { [groupName: string]: string[] } = {}
+
   // First filter by key (filter group)
   let filteredByKey = Object.entries(filters.value).filter(
     ([key]) =>
@@ -482,13 +487,30 @@ const filteredKeywordFilters = computed(() => {
     })
   }
 
-  let f = Object.fromEntries(
-    filteredByKey.map(([key, group]) => [
-      key,
-      getMemoizedSortedGroup(key, group as Record<string, number>, customSort(key)),
-    ]),
-  )
-  return f
+  for (const [key, group] of filteredByKey) {
+    // Use memoized sort function
+    const sortedObj = getMemoizedSortedGroup(key, group as Record<string, number>, customSort(key))
+
+    // Convert to Map to preserve order, then extract keys
+    const sorted = new Map(Object.entries(sortedObj).sort(customSort(key)))
+
+    // Store object and track order
+    const obj: Record<string, number> = {}
+    const orderedKeys: string[] = []
+
+    for (const [k, v] of sorted) {
+      obj[k] = v
+      orderedKeys.push(k)
+    }
+
+    result[key] = obj
+    keyOrder[key] = orderedKeys
+  }
+
+  // Store order for child components
+  filterKeyOrder.value = keyOrder
+
+  return result
 })
 
 const sortedFilterGroups = computed(() => {
@@ -1082,6 +1104,7 @@ async function calculateTabCountsAsync(
 // Expose internal state and methods for testing
 defineExpose({
   selectedFilters,
+  filterKeyOrder,
   activeTab,
   searchQuery,
   clearSearch,
