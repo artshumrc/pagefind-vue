@@ -834,7 +834,7 @@ const handleFilterUpdate = (group: string, value: string) => {
     previousValue.length !== currentValue.length ||
     !previousValue.every((val) => currentValue.includes(val))
 
-  if (hasChanged && !props.searchButton) {
+  if (hasChanged) {
     performSearch(searchQuery.value)
   }
 }
